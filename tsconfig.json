@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@ampeco/ampeco-ui/*": ["../ampeco-backend-ui-package/dist/*"] // TODO: Remove this once the package is published
     }
   },
   "include": [
