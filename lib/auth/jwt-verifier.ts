@@ -63,8 +63,6 @@ async function getPublicKeyUrl(
 
     const jwks = await response.json();
 
-    console.log("jwks", jwks);
-
     // Validate JWKS format
     if (!jwks.keys || !Array.isArray(jwks.keys)) {
       throw new Error("Invalid JWKS format: missing keys array");
