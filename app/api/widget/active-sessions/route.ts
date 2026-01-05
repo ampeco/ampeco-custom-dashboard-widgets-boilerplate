@@ -27,6 +27,8 @@ export async function GET() {
       per_page: 100,
     });
 
+    console.log("response", response);
+
     const activeSessions = response.data || [];
 
     return NextResponse.json({
@@ -41,4 +43,3 @@ export async function GET() {
     );
   }
 }
-

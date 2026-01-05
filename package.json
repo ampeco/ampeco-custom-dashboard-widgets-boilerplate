@@ -1,6 +1,6 @@
 {
   "name": "ampeco-custom-dashboard-widgets-boilerplate",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Template for building AMPECO custom widgets",
   "license": "MIT",
   "engines": {
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@ampeco/ampeco-ui": "file:../ampeco-backend-ui-package",
+    "@tanstack/react-query": "^5.90.15",
     "jose": "^6.1.3",
     "next": "16.0.10",
     "node-cache": "^5.1.2",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tanstack/react-query-devtools": "^5.91.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@types/jest": "^30.0.0",
