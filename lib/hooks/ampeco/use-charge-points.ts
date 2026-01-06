@@ -5,9 +5,21 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { QueryKey } from "@tanstack/react-query";
 import type { ApiResponse, ChargePoint } from "@/lib/services/ampeco-api";
-import { ampecoKeys } from "./query-keys";
 import { appendTokenToUrl } from "./utils";
+
+/**
+ * Query keys for charge points
+ */
+const chargePointKeys = {
+  all: ["ampeco", "charge-points"] as const,
+  lists: () => [...chargePointKeys.all, "list"] as const,
+  list: (params?: Record<string, unknown>) =>
+    [...chargePointKeys.lists(), params] as QueryKey,
+  details: () => [...chargePointKeys.all, "detail"] as const,
+  detail: (id: string) => [...chargePointKeys.details(), id] as QueryKey,
+};
 
 /**
  * Hook to fetch charge points
@@ -19,7 +31,7 @@ export function useChargePoints(params?: {
   search?: string;
 }) {
   return useQuery<ApiResponse<ChargePoint[]>, Error>({
-    queryKey: ampecoKeys.chargePointsList(params),
+    queryKey: chargePointKeys.list(params),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", params.page.toString());
@@ -28,7 +40,7 @@ export function useChargePoints(params?: {
       if (params?.status) searchParams.set("status", params.status);
       if (params?.search) searchParams.set("search", params.search);
 
-      let url = `/api/charge-points${
+      let url = `/api/charge-points/v1.0${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`;
       url = appendTokenToUrl(url);
@@ -50,9 +62,9 @@ export function useChargePoints(params?: {
  */
 export function useChargePoint(id: string) {
   return useQuery<ChargePoint, Error>({
-    queryKey: ampecoKeys.chargePoint(id),
+    queryKey: chargePointKeys.detail(id),
     queryFn: async () => {
-      let url = `/api/charge-points/${id}`;
+      let url = `/api/charge-points/v1.0/${id}`;
       url = appendTokenToUrl(url);
 
       const response = await fetch(url);
@@ -74,7 +86,7 @@ export function useCreateChargePoint() {
 
   return useMutation<ChargePoint, Error, Partial<ChargePoint>>({
     mutationFn: async (data) => {
-      let url = "/api/charge-points";
+      let url = "/api/charge-points/v1.0";
       url = appendTokenToUrl(url);
 
       const response = await fetch(url, {
@@ -94,7 +106,7 @@ export function useCreateChargePoint() {
     onSuccess: () => {
       // Invalidate charge points list to refetch
       queryClient.invalidateQueries({
-        queryKey: ampecoKeys.chargePoints(),
+        queryKey: chargePointKeys.lists(),
       });
     },
   });
@@ -112,7 +124,7 @@ export function useUpdateChargePoint() {
     { id: string; data: Partial<ChargePoint> }
   >({
     mutationFn: async ({ id, data }) => {
-      let url = `/api/charge-points/${id}`;
+      let url = `/api/charge-points/v1.0/${id}`;
       url = appendTokenToUrl(url);
 
       const response = await fetch(url, {
@@ -132,10 +144,10 @@ export function useUpdateChargePoint() {
     onSuccess: (_, variables) => {
       // Invalidate specific charge point and list
       queryClient.invalidateQueries({
-        queryKey: ampecoKeys.chargePoint(variables.id),
+        queryKey: chargePointKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({
-        queryKey: ampecoKeys.chargePoints(),
+        queryKey: chargePointKeys.lists(),
       });
     },
   });
@@ -149,7 +161,7 @@ export function useDeleteChargePoint() {
 
   return useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      let url = `/api/charge-points/${id}`;
+      let url = `/api/charge-points/v1.0/${id}`;
       url = appendTokenToUrl(url);
 
       const response = await fetch(url, {
@@ -164,9 +176,8 @@ export function useDeleteChargePoint() {
     onSuccess: () => {
       // Invalidate charge points list
       queryClient.invalidateQueries({
-        queryKey: ampecoKeys.chargePoints(),
+        queryKey: chargePointKeys.lists(),
       });
     },
   });
 }
-

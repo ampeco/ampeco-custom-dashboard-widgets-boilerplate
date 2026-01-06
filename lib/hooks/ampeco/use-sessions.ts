@@ -5,9 +5,21 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import type { QueryKey } from "@tanstack/react-query";
 import type { ApiResponse, Session } from "@/lib/services/ampeco-api";
-import { ampecoKeys } from "./query-keys";
 import { appendTokenToUrl } from "./utils";
+
+/**
+ * Query keys for sessions
+ */
+const sessionKeys = {
+  all: ["ampeco", "sessions"] as const,
+  lists: () => [...sessionKeys.all, "list"] as const,
+  list: (params?: Record<string, unknown>) =>
+    [...sessionKeys.lists(), params] as QueryKey,
+  details: () => [...sessionKeys.all, "detail"] as const,
+  detail: (id: string) => [...sessionKeys.details(), id] as QueryKey,
+};
 
 /**
  * Hook to fetch sessions
@@ -21,7 +33,7 @@ export function useSessions(params?: {
   end_date?: string;
 }) {
   return useQuery<ApiResponse<Session[]>, Error>({
-    queryKey: ampecoKeys.sessionsList(params),
+    queryKey: sessionKeys.list(params),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
       if (params?.page) searchParams.set("page", params.page.toString());
@@ -33,7 +45,7 @@ export function useSessions(params?: {
       if (params?.start_date) searchParams.set("start_date", params.start_date);
       if (params?.end_date) searchParams.set("end_date", params.end_date);
 
-      let url = `/api/sessions${
+      let url = `/api/sessions/v1.0${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`;
       url = appendTokenToUrl(url);
@@ -47,4 +59,3 @@ export function useSessions(params?: {
     staleTime: 30 * 1000, // 30 seconds
   });
 }
-

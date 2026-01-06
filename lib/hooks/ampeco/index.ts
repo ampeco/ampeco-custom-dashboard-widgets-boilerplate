@@ -2,8 +2,9 @@
  * AMPECO TanStack Query Hooks
  *
  * Modular hooks for fetching and mutating AMPECO API data.
- * Import from this file for backward compatibility, or import
- * specific hooks from their individual files for better tree-shaking.
+ * Each hook file is self-contained with its own query keys.
+ * Import from this file for convenience, or import specific hooks
+ * from their individual files for better tree-shaking.
  *
  * @example
  * ```tsx
@@ -14,9 +15,6 @@
  * import { useChargePoints } from "@/lib/hooks/ampeco/use-charge-points";
  * ```
  */
-
-// Query keys
-export { ampecoKeys } from "./query-keys";
 
 // Charge Points hooks
 export {
