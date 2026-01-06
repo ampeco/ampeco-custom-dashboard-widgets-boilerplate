@@ -1,6 +1,98 @@
-# Creating a New Hook
+# Creating a New API Call
 
-To create a new hook for a new AMPECO API resource, follow this template:
+There are two ways to make API calls in this project:
+
+## Option 1: Use Generic Hooks (Recommended) ⭐
+
+The easiest way is to use the generic hooks (`useGet`, `usePost`, `usePatch`, `usePut`, `useDelete`) directly in your components. No need to create new hook files!
+
+### Example: Using Generic Hooks
+
+```tsx
+"use client";
+
+import { useGet, usePost, usePatch, useDelete } from "@/lib/hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import type { ApiResponse } from "@/lib/services/api";
+
+export function ChargePointsList() {
+  const queryClient = useQueryClient();
+
+  // GET - Fetch list
+  const { data, isLoading } = useGet("/api/charge-points/v1.0", {
+    page: 1,
+    per_page: 10,
+    status: "online",
+  });
+
+  // POST - Create
+  const createMutation = usePost("/api/charge-points/v1.0", {
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ampeco", "api", "/api/charge-points/v1.0"],
+      });
+    },
+  });
+
+  // PATCH - Update
+  const updateMutation = usePatch("/api/charge-points/v1.0", {
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ampeco", "api", "/api/charge-points/v1.0"],
+      });
+    },
+  });
+
+  // DELETE
+  const deleteMutation = useDelete<void, string>("/api/charge-points/v1.0", {
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["ampeco", "api", "/api/charge-points/v1.0"],
+      });
+    },
+  });
+
+  const handleCreate = () => {
+    createMutation.mutate({ name: "New CP", status: "offline" });
+  };
+
+  const handleUpdate = (id: string) => {
+    updateMutation.mutate({ id, data: { status: "online" } });
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div>
+      {Array.isArray(data?.data) &&
+        data.data.map((cp: any) => (
+          <div key={cp?.id}>
+            {cp?.name}
+            <button onClick={() => handleUpdate(cp?.id)}>Update</button>
+            <button onClick={() => handleDelete(cp?.id)}>Delete</button>
+          </div>
+        ))}
+      <button onClick={handleCreate}>Create New</button>
+    </div>
+  );
+}
+```
+
+### Benefits of Generic Hooks
+
+- ✅ **No new files needed** - Use directly in components
+- ✅ **Works with any endpoint** - Just pass the URL
+- ✅ **Automatic token handling** - Token is appended automatically
+- ✅ **Type-safe** - Full TypeScript support
+- ✅ **Flexible** - Pass any query options or mutation options
+
+## Option 2: Create Resource-Specific Hooks
+
+If you prefer to create custom hooks with specific logic, follow this template:
 
 ## Template Structure
 
@@ -13,7 +105,7 @@ To create a new hook for a new AMPECO API resource, follow this template:
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
-import type { ApiResponse, {ResourceType} } from "@/lib/services/ampeco-api";
+import type { ApiResponse } from "@/lib/services/api";
 import { appendTokenToUrl } from "./utils";
 
 /**
@@ -37,7 +129,7 @@ export function use{ResourceName}(params?: {
   per_page?: number;
   // Add other filter params
 }) {
-  return useQuery<ApiResponse<{ResourceType}[]>, Error>({
+  return useQuery<ApiResponse<unknown[]>, Error>({
     queryKey: {resource}Keys.list(params),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
@@ -65,7 +157,7 @@ export function use{ResourceName}(params?: {
  * Hook to fetch a single {resource} by ID
  */
 export function use{ResourceName}(id: string) {
-  return useQuery<{ResourceType}, Error>({
+  return useQuery<unknown, Error>({
     queryKey: {resource}Keys.detail(id),
     queryFn: async () => {
       let url = `/api/{resource}/v1.0/${id}`;
@@ -88,7 +180,7 @@ export function use{ResourceName}(id: string) {
 export function useCreate{ResourceName}() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ResourceType}, Error, Partial<{ResourceType}>>({
+  return useMutation<unknown, Error, Record<string, unknown>>({
     mutationFn: async (data) => {
       let url = "/api/{resource}/v1.0";
       url = appendTokenToUrl(url);
@@ -121,9 +213,9 @@ export function useUpdate{ResourceName}() {
   const queryClient = useQueryClient();
 
   return useMutation<
-    {ResourceType},
+    unknown,
     Error,
-    { id: string; data: Partial<{ResourceType}> }
+    { id: string; data: Record<string, unknown> }
   >({
     mutationFn: async ({ id, data }) => {
       let url = `/api/{resource}/v1.0/${id}`;
@@ -183,24 +275,21 @@ export function useDelete{ResourceName}() {
 
 ## Steps to Create a New Hook
 
-1. Copy `use-charge-points.ts` as a template
-2. Replace all occurrences of:
-   - `ChargePoint` → Your resource type
-   - `charge-points` → Your resource endpoint
-   - `chargePoint` → Your resource variable name
-   - `chargePointKeys` → Your resource keys name
-3. Update the API endpoint version if needed (e.g., `v1.0`, `v2.1`)
-4. Add/remove query parameters as needed
-5. Export the hooks from `index.ts`
+1. Create a new file: `lib/hooks/use-your-resource.ts`
+2. Define query keys locally in the file (see template below)
+3. Implement your hooks using `useQuery` or `useMutation` from TanStack Query
+4. Use `appendTokenToUrl` from `./utils` for token handling
+5. Export the hooks from the file
+6. Optionally re-export from `index.ts` for convenience
 
 ## Example: Creating EVSE Hooks
 
 ```typescript
-// File: lib/hooks/ampeco/use-evses.ts
+// File: lib/hooks/use-evses.ts
 
 import { useQuery } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
-import type { ApiResponse, Evse } from "@/lib/services/ampeco-api";
+import type { ApiResponse } from "@/lib/services/api";
 import { appendTokenToUrl } from "./utils";
 
 const evseKeys = {
@@ -217,7 +306,7 @@ export function useEvses(params?: {
   per_page?: number;
   charge_point_id?: string;
 }) {
-  return useQuery<ApiResponse<Evse[]>, Error>({
+  return useQuery<ApiResponse<unknown[]>, Error>({
     queryKey: evseKeys.list(params),
     queryFn: async () => {
       const searchParams = new URLSearchParams();
@@ -242,4 +331,3 @@ export function useEvses(params?: {
   });
 }
 ```
-

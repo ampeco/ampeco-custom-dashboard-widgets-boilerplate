@@ -4,13 +4,14 @@
  * Centralized error handling and user-friendly error messages
  */
 
-import type { ApiError } from "@/lib/services/ampeco-api";
+import type { ApiError } from "@/lib/services/api";
 
 /**
  * User-friendly error messages
  */
 export const ERROR_MESSAGES = {
-  JWT_MISSING: "Authentication token is missing. Please ensure the widget is loaded from AMPECO backend.",
+  JWT_MISSING:
+    "Authentication token is missing. Please ensure the widget is loaded from AMPECO backend.",
   JWT_EXPIRED: "Your session has expired. Please refresh the page.",
   JWT_INVALID: "Invalid authentication token. Please check your configuration.",
   API_ERROR: "Failed to fetch data from AMPECO API. Please try again later.",
@@ -32,7 +33,10 @@ export function formatApiError(error: unknown): string {
     if (error.message.includes("expired")) {
       return ERROR_MESSAGES.JWT_EXPIRED;
     }
-    if (error.message.includes("signature") || error.message.includes("invalid")) {
+    if (
+      error.message.includes("signature") ||
+      error.message.includes("invalid")
+    ) {
       return ERROR_MESSAGES.JWT_INVALID;
     }
     if (error.message.includes("network") || error.message.includes("fetch")) {
@@ -72,4 +76,3 @@ export function isAuthError(error: unknown): boolean {
   }
   return false;
 }
-

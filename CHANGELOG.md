@@ -6,9 +6,9 @@
 
 - **TanStack Query Integration**: Added @tanstack/react-query for efficient data fetching and caching
   - QueryProvider component with default configuration
-  - Custom hooks for AMPECO API (useChargePoints, useSessions, useChargePoint, etc.)
+  - Generic API hooks (useGet, usePost, usePatch, usePut, useDelete) for any endpoint
   - React Query DevTools in development mode
-  - Self-contained query keys in each hook file for better modularity
+  - Unified hook structure for easy API integration
 - **Unified API Route Handler**: Created catch-all route `/api/[...path]/route.ts` that handles all AMPECO API requests dynamically
   - Supports GET, POST, PATCH, PUT, DELETE methods
   - Automatic query parameter parsing (numbers, booleans, strings)
@@ -27,7 +27,6 @@
 
 - Fixed linting errors in dashboard page (JSX in try/catch warnings)
 - Fixed TypeScript type issues with React type version mismatches
-- Fixed useChargePoint hook to use correct endpoint path with version
 
 ## 0.2.0 (feat/config-and-auth)
 

@@ -1,5 +1,5 @@
 /**
- * AMPECO API Service
+ * Generic API Service
  *
  * Provides a client for making authenticated requests to AMPECO API
  * with automatic JWT impersonation support.
@@ -19,59 +19,6 @@ export interface ApiResponse<T> {
     per_page?: number;
     total?: number;
   };
-}
-
-/**
- * Charge Point resource
- */
-export interface ChargePoint {
-  id: string;
-  name: string;
-  status: "online" | "offline" | "charging" | "available" | "faulted";
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
-  connectors?: Connector[];
-  created_at?: string;
-  updated_at?: string;
-}
-
-/**
- * Connector resource
- */
-export interface Connector {
-  id: string;
-  connector_type: string;
-  max_power?: number;
-  status?: string;
-}
-
-/**
- * EVSE resource
- */
-export interface Evse {
-  id: string;
-  charge_point_id: string;
-  evse_id: string;
-  status: string;
-  connectors?: Connector[];
-}
-
-/**
- * Session resource
- */
-export interface Session {
-  id: string;
-  charge_point_id: string;
-  connector_id: string;
-  status: "active" | "completed" | "stopped" | "pending";
-  start_time?: string;
-  end_time?: string;
-  energy_delivered?: number;
-  cost?: number;
-  user_id?: string;
 }
 
 /**
@@ -95,9 +42,9 @@ export interface ApiRequestOptions {
 }
 
 /**
- * AMPECO API Client
+ * Generic API Client
  */
-export class AmpecoApiService {
+export class ApiService {
   private apiToken: string;
   private apiBase: string;
   private tenantUrl: string;
@@ -144,7 +91,7 @@ export class AmpecoApiService {
   /**
    * Makes an authenticated API request
    */
-  private async request<T>(
+  async request<T>(
     endpoint: string,
     options: ApiRequestOptions = {}
   ): Promise<T> {
@@ -168,7 +115,7 @@ export class AmpecoApiService {
     // Debug logging
     const isDevelopment = process.env.NODE_ENV === "development";
     if (isDevelopment) {
-      console.log("[AMPECO API Request]");
+      console.log("[API Request]");
       console.log("  Method:", method);
       console.log("  URL:", url);
       console.log("  Endpoint:", endpoint);
@@ -212,7 +159,7 @@ export class AmpecoApiService {
       const response = await fetch(url, requestOptions);
 
       if (isDevelopment) {
-        console.log("[AMPECO API Response]");
+        console.log("[API Response]");
         console.log("  Status:", response.status, response.statusText);
         console.log("  OK:", response.ok);
       }
@@ -265,134 +212,19 @@ export class AmpecoApiService {
       );
     }
   }
-
-  /**
-   * Gets charge points
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/charge-points/v1.0
-   */
-  async getChargePoints(params?: {
-    page?: number;
-    per_page?: number;
-    status?: string;
-    search?: string;
-  }): Promise<ApiResponse<ChargePoint[]>> {
-    return this.request<ApiResponse<ChargePoint[]>>("charge-points/v1.0", {
-      params: params as Record<string, string | number | boolean>,
-    });
-  }
-
-  /**
-   * Gets a single charge point by ID
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/charge-points/v1.0/{id}
-   */
-  async getChargePoint(id: string): Promise<ChargePoint> {
-    return this.request<ChargePoint>(`charge-points/v1.0/${id}`);
-  }
-
-  /**
-   * Creates a new charge point
-   * Endpoint: POST https://{AMPECO_BASE_DOMAIN}/public-api/resources/charge-points/v1.0
-   */
-  async createChargePoint(data: Partial<ChargePoint>): Promise<ChargePoint> {
-    return this.request<ChargePoint>("charge-points/v1.0", {
-      method: "POST",
-      body: data,
-    });
-  }
-
-  /**
-   * Updates a charge point
-   * Endpoint: PATCH https://{AMPECO_BASE_DOMAIN}/public-api/resources/charge-points/v1.0/{id}
-   */
-  async updateChargePoint(
-    id: string,
-    data: Partial<ChargePoint>
-  ): Promise<ChargePoint> {
-    return this.request<ChargePoint>(`charge-points/v1.0/${id}`, {
-      method: "PATCH",
-      body: data,
-    });
-  }
-
-  /**
-   * Deletes a charge point
-   * Endpoint: DELETE https://{AMPECO_BASE_DOMAIN}/public-api/resources/charge-points/v1.0/{id}
-   */
-  async deleteChargePoint(id: string): Promise<void> {
-    await this.request<void>(`charge-points/v1.0/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  /**
-   * Gets sessions
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/sessions/v1.0
-   */
-  async getSessions(params?: {
-    page?: number;
-    per_page?: number;
-    status?: string;
-    charge_point_id?: string;
-    start_date?: string;
-    end_date?: string;
-  }): Promise<ApiResponse<Session[]>> {
-    return this.request<ApiResponse<Session[]>>("sessions/v1.0", {
-      params: params as Record<string, string | number | boolean>,
-    });
-  }
-
-  /**
-   * Gets a single session by ID
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/sessions/v1.0/{id}
-   */
-  async getSession(id: string): Promise<Session> {
-    return this.request<Session>(`sessions/v1.0/${id}`);
-  }
-
-  /**
-   * Gets EVSEs
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/evses/v2.1
-   */
-  async getEvses(params?: {
-    page?: number;
-    per_page?: number;
-    charge_point_id?: string;
-  }): Promise<ApiResponse<Evse[]>> {
-    return this.request<ApiResponse<Evse[]>>("evses/v2.1", {
-      params: params as Record<string, string | number | boolean>,
-    });
-  }
-
-  /**
-   * Gets a single EVSE by ID
-   * Endpoint: GET https://{AMPECO_BASE_DOMAIN}/public-api/resources/evses/v2.1/{id}
-   */
-  async getEvse(id: string): Promise<Evse> {
-    return this.request<Evse>(`evses/v2.1/${id}`);
-  }
-
-  /**
-   * Generic API request method for custom endpoints
-   */
-  async customRequest<T>(
-    endpoint: string,
-    options: ApiRequestOptions = {}
-  ): Promise<T> {
-    return this.request<T>(endpoint, options);
-  }
 }
 
 /**
- * Singleton instance of AMPECO API service
+ * Singleton instance of API service
  */
-let apiServiceInstance: AmpecoApiService | null = null;
+let apiServiceInstance: ApiService | null = null;
 
 /**
- * Gets the AMPECO API service instance
+ * Gets the API service instance
  */
-export function getAmpecoApiService(): AmpecoApiService {
+export function getApiService(): ApiService {
   if (!apiServiceInstance) {
-    apiServiceInstance = new AmpecoApiService();
+    apiServiceInstance = new ApiService();
   }
   return apiServiceInstance;
 }

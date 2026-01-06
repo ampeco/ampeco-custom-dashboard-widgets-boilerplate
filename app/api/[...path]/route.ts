@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAmpecoApiService } from "@/lib/services/ampeco-api";
+import { getApiService } from "@/lib/services/api";
 
 /**
  * Unified API Route Handler
@@ -41,7 +41,7 @@ export async function GET(
       console.log("  Full URL:", request.nextUrl.toString());
     }
 
-    const apiService = getAmpecoApiService();
+    const apiService = getApiService();
     const searchParams = request.nextUrl.searchParams;
 
     // Convert search params to object
@@ -61,7 +61,7 @@ export async function GET(
       console.log("  Query params:", queryParams);
     }
 
-    const response = await apiService.customRequest(endpoint, {
+    const response = await apiService.request(endpoint, {
       method: "GET",
       params: queryParams,
     });
@@ -93,10 +93,10 @@ export async function POST(
   try {
     const { path } = await params;
     const endpoint = path.join("/");
-    const apiService = getAmpecoApiService();
+    const apiService = getApiService();
     const body = await request.json();
 
-    const response = await apiService.customRequest(endpoint, {
+    const response = await apiService.request(endpoint, {
       method: "POST",
       body,
     });
@@ -128,10 +128,10 @@ export async function PATCH(
   try {
     const { path } = await params;
     const endpoint = path.join("/");
-    const apiService = getAmpecoApiService();
+    const apiService = getApiService();
     const body = await request.json();
 
-    const response = await apiService.customRequest(endpoint, {
+    const response = await apiService.request(endpoint, {
       method: "PATCH",
       body,
     });
@@ -163,10 +163,10 @@ export async function PUT(
   try {
     const { path } = await params;
     const endpoint = path.join("/");
-    const apiService = getAmpecoApiService();
+    const apiService = getApiService();
     const body = await request.json();
 
-    const response = await apiService.customRequest(endpoint, {
+    const response = await apiService.request(endpoint, {
       method: "PUT",
       body,
     });
@@ -198,9 +198,9 @@ export async function DELETE(
   try {
     const { path } = await params;
     const endpoint = path.join("/");
-    const apiService = getAmpecoApiService();
+    const apiService = getApiService();
 
-    await apiService.customRequest(endpoint, {
+    await apiService.request(endpoint, {
       method: "DELETE",
     });
 
