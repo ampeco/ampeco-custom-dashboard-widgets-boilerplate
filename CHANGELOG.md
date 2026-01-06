@@ -8,12 +8,18 @@
   - QueryProvider component with default configuration
   - Custom hooks for AMPECO API (useChargePoints, useSessions, useChargePoint, etc.)
   - React Query DevTools in development mode
-  - Query key factory for consistent cache management
-- **Documentation**: Updated INTEGRATION_GUIDE.md with TanStack Query usage examples and best practices
+  - Self-contained query keys in each hook file for better modularity
+- **Unified API Route Handler**: Created catch-all route `/api/[...path]/route.ts` that handles all AMPECO API requests dynamically
+  - Supports GET, POST, PATCH, PUT, DELETE methods
+  - Automatic query parameter parsing (numbers, booleans, strings)
+  - Works with any AMPECO API endpoint without code changes
+- **Hook Template Guide**: Created HOOK_TEMPLATE.md with complete template and examples for creating new hooks
+  - Step-by-step instructions
+  - Self-contained hook structure
+  - Example implementations
 
 ### Changed
 
-- **Dashboard Components**: Replaced custom KPICard component with Card from @ampeco/ampeco-ui
 - **Next.js 16 Compatibility**: Updated all page components to handle async searchParams (Next.js 16 requirement)
 - **Git Configuration**: Updated .gitignore to allow .env.example file to be committed
 
@@ -21,7 +27,7 @@
 
 - Fixed linting errors in dashboard page (JSX in try/catch warnings)
 - Fixed TypeScript type issues with React type version mismatches
-- Improved error handling structure in dashboard page
+- Fixed useChargePoint hook to use correct endpoint path with version
 
 ## 0.2.0 (feat/config-and-auth)
 
