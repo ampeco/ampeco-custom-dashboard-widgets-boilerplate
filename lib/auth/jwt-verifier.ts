@@ -41,7 +41,6 @@ async function getPublicKeyUrl(
   // Check cache first
   const cached = publicKeyCache.get<string>(publicKeyUrl);
   if (cached) {
-    console.log("cached", cached);
     return cached;
   }
 

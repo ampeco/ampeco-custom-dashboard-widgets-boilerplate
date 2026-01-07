@@ -8,7 +8,7 @@ import {
   isAuthError,
   ERROR_MESSAGES,
 } from "@/lib/utils/error-handler";
-import type { ApiError } from "@/lib/services/ampeco-api";
+import type { ApiError } from "@/lib/services/api";
 
 describe("Error Handler", () => {
   describe("formatApiError", () => {
@@ -65,4 +65,3 @@ describe("Error Handler", () => {
     });
   });
 });
-
