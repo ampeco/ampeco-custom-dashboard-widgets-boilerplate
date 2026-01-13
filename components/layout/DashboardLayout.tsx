@@ -32,7 +32,10 @@ export function DashboardLayout({
             <div className="flex items-center gap-4">
               <Link href={preserveToken("/dashboard", token)}>Dashboard</Link>
               <Link href={preserveToken("/listings", token)}>Listings</Link>
-              <Link href={preserveToken("/form", token)}>Form</Link>
+              <Link href={preserveToken("/form", token)}>Form Demo</Link>
+              <Link href={preserveToken("/edit-charge-point", token)}>
+                Edit Charge Point
+              </Link>
             </div>
           </div>
         </div>

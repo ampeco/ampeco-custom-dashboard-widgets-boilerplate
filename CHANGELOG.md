@@ -37,6 +37,22 @@
   - Type-safe form handling
   - Schema-based validation
   - Easy integration with @ampeco/ampeco-ui components
+- **Edit Charge Point Form**: Form for editing charge point resources
+  - Select charge point from dropdown or via URL parameter
+  - Automatic form prefilling when charge point is selected
+  - Uses react-hook-form and zod validation
+  - Integrated with API using usePatch hook for PATCH requests
+  - Supports status options: active, disabled, out of order, demo
+  - Query invalidation on successful update
+  - Loading and error states with Loader and Message components
+- **Edit Charge Point Page**: Dedicated page at `/edit-charge-point` for editing charge points
+  - Linked in navigation bar
+  - Supports URL parameter (`?id={chargePointId}`) for direct charge point selection
+  - Automatic form population when navigating from listings
+- **Charge Point Name Links**: Made charge point names in listings table clickable
+  - Names link to edit charge point page with charge point ID
+  - Preserves JWT token in URL
+  - Auto-prefills form when navigating from listings table
 
 ### Changed
 
@@ -51,6 +67,11 @@
 - **Form Page**: Added DemoForm with comprehensive form demonstration
   - Demonstrates all available form components
   - Shows best practices for form validation
+- **Navigation**: Added "Edit Charge Point" link to navigation bar
+  - Provides quick access to charge point editing functionality
+- **Listings Table**: Charge point names are now clickable links
+  - Direct navigation to edit page with charge point pre-selected
+  - Improved user experience for editing charge points
 - **UI Components**: All components use design system components from @ampeco/ampeco-ui
 
 ### Fixed

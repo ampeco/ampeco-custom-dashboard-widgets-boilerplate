@@ -7,6 +7,9 @@
  */
 
 import { SmartTable } from "@ampeco/ampeco-ui";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { preserveToken } from "@/lib/utils/preserve-token";
 
 // Generic row type with rowId and computed fields for SmartTable
 type RowWithId = Record<string, unknown> & {
@@ -14,6 +17,7 @@ type RowWithId = Record<string, unknown> & {
   // Add computed fields for display
   locationDisplay: string;
   connectorsDisplay: string;
+  nameLink: React.ReactNode;
 };
 
 interface SmartTableWrapperProps {
@@ -21,10 +25,14 @@ interface SmartTableWrapperProps {
 }
 
 export function SmartTableWrapper({ data }: SmartTableWrapperProps) {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+
   // Transform data to include rowId and computed fields
   const rows: RowWithId[] = data.map((item) => {
     const record = item as Record<string, unknown>;
     const id = record.id?.toString() || "";
+    const name = record.name?.toString() || `Charge Point ${id}`;
     const connectors = Array.isArray(record.connectors)
       ? record.connectors
       : [];
@@ -35,18 +43,29 @@ export function SmartTableWrapper({ data }: SmartTableWrapperProps) {
     const address = location?.address?.toString() || "N/A";
     const count = connectors.length;
 
+    // Create link to edit charge point page with charge point ID
+    const editUrl = preserveToken(`/edit-charge-point?id=${id}`, token);
+
     return {
       ...record,
       rowId: id,
       locationDisplay: address,
       connectorsDisplay: `${count} connector${count !== 1 ? "s" : ""}`,
+      nameLink: (
+        <Link
+          href={editUrl}
+          // className="text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          {name}
+        </Link>
+      ),
     } as RowWithId;
   });
 
   // Configure headers
   const headers = [
     {
-      key: "name" as keyof RowWithId,
+      key: "nameLink" as keyof RowWithId,
       label: "Name",
     },
     {

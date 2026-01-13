@@ -75,14 +75,35 @@ export function DashboardClient() {
       ? sessionsResponse
       : [];
 
-  // Calculate KPIs (safely access properties)
-  const onlineChargePoints = chargePoints.filter(
+  const totalSessions =
+    sessionsResponse &&
+    typeof sessionsResponse === "object" &&
+    "meta" in sessionsResponse &&
+    sessionsResponse.meta &&
+    typeof sessionsResponse.meta === "object" &&
+    "total" in sessionsResponse.meta
+      ? Number(sessionsResponse.meta.total) || 0
+      : sessions.length;
+
+  // Calculate KPIs for charge points by status
+  const activeChargePoints = chargePoints.filter(
     (cp) =>
-      cp && typeof cp === "object" && "status" in cp && cp.status === "online"
+      cp && typeof cp === "object" && "status" in cp && cp.status === "active"
   ).length;
-  const offlineChargePoints = chargePoints.filter(
+  const disabledChargePoints = chargePoints.filter(
     (cp) =>
-      cp && typeof cp === "object" && "status" in cp && cp.status === "offline"
+      cp && typeof cp === "object" && "status" in cp && cp.status === "disabled"
+  ).length;
+  const outOfOrderChargePoints = chargePoints.filter(
+    (cp) =>
+      cp &&
+      typeof cp === "object" &&
+      "status" in cp &&
+      cp.status === "out of order"
+  ).length;
+  const demoChargePoints = chargePoints.filter(
+    (cp) =>
+      cp && typeof cp === "object" && "status" in cp && cp.status === "demo"
   ).length;
   const activeSessions = sessions.filter(
     (s) => s && typeof s === "object" && "status" in s && s.status === "active"
@@ -123,20 +144,6 @@ export function DashboardClient() {
     <>
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <AmpecoCard header="Total Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{chargePoints.length}</span>
-            <span className="ml-2 text-sm text-gray-500">points</span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Online Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{onlineChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
         <AmpecoCard header="Active Sessions" showFooter={false}>
           <div className="flex items-baseline">
             <span className="text-3xl font-bold">{activeSessions}</span>
@@ -153,18 +160,6 @@ export function DashboardClient() {
             <span className="ml-2 text-sm text-gray-500">kWh</span>
           </div>
         </AmpecoCard>
-      </div>
-
-      {/* Additional KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <AmpecoCard header="Offline Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{offlineChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
         <AmpecoCard header="Total Revenue" showFooter={false}>
           <div className="flex items-baseline">
             <span className="text-3xl font-bold">
@@ -174,8 +169,47 @@ export function DashboardClient() {
         </AmpecoCard>
         <AmpecoCard header="Total Sessions" showFooter={false}>
           <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{sessions.length}</span>
-            <span className="ml-2 text-sm text-gray-500">sessions</span>
+            <span className="text-3xl font-bold">{totalSessions}</span>
+            <span className="ml-2 text-sm text-gray-500">
+              session{totalSessions !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </AmpecoCard>
+      </div>
+
+      {/* Charge Point Status KPIs */}
+      <h2>Charge Point Status</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <AmpecoCard header="Active Charge Points" showFooter={false}>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold">{activeChargePoints}</span>
+            <span className="ml-2 text-sm text-gray-500">
+              of {chargePoints.length}
+            </span>
+          </div>
+        </AmpecoCard>
+        <AmpecoCard header="Disabled Charge Points" showFooter={false}>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold">{disabledChargePoints}</span>
+            <span className="ml-2 text-sm text-gray-500">
+              of {chargePoints.length}
+            </span>
+          </div>
+        </AmpecoCard>
+        <AmpecoCard header="Out of Order" showFooter={false}>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold">{outOfOrderChargePoints}</span>
+            <span className="ml-2 text-sm text-gray-500">
+              of {chargePoints.length}
+            </span>
+          </div>
+        </AmpecoCard>
+        <AmpecoCard header="Demo Charge Points" showFooter={false}>
+          <div className="flex items-baseline">
+            <span className="text-3xl font-bold">{demoChargePoints}</span>
+            <span className="ml-2 text-sm text-gray-500">
+              of {chargePoints.length}
+            </span>
           </div>
         </AmpecoCard>
       </div>
