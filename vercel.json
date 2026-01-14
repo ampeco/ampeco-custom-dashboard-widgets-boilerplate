@@ -7,11 +7,6 @@
   "regions": ["iad1"],
   "env": {
     "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NPM_TOKEN": "@NPM_TOKEN"
-    }
   }
 }
 
