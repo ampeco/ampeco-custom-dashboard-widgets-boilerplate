@@ -1,8 +1,7 @@
 "use client";
 
 import { useGet } from "@/lib/hooks";
-import { Card as AmpecoCard } from "@ampeco/ampeco-ui";
-import { ChartCard } from "./ChartCard";
+import { Card } from "@ampeco/ampeco-ui";
 import { EnergyChart } from "./EnergyChart";
 import { SessionsStatusChart } from "./SessionsStatusChart";
 import { RevenueChart } from "./RevenueChart";
@@ -141,105 +140,130 @@ export function DashboardClient() {
   }, 0);
 
   return (
-    <>
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <AmpecoCard header="Active Sessions" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{activeSessions}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              currently charging
-            </span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Total Energy Delivered" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">
-              {totalEnergyDelivered.toFixed(2)}
-            </span>
-            <span className="ml-2 text-sm text-gray-500">kWh</span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Total Revenue" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">
-              ${totalRevenue.toFixed(2)}
-            </span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Total Sessions" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{totalSessions}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              session{totalSessions !== 1 ? "s" : ""}
-            </span>
-          </div>
-        </AmpecoCard>
-      </div>
+    <div className="grid md:grid-cols-12 gap-4 mb-8">
+      {/* 2/3 width */}
+      <Card
+        header="Active Sessions"
+        showFooter={false}
+        className="md:col-span-8"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{activeSessions}</span>
+          <span className="ml-2 text-sm text-gray-500">currently charging</span>
+        </div>
+      </Card>
 
-      {/* Charge Point Status KPIs */}
-      <h2>Charge Point Status</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <AmpecoCard header="Active Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{activeChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Disabled Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{disabledChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Out of Order" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{outOfOrderChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
-        <AmpecoCard header="Demo Charge Points" showFooter={false}>
-          <div className="flex items-baseline">
-            <span className="text-3xl font-bold">{demoChargePoints}</span>
-            <span className="ml-2 text-sm text-gray-500">
-              of {chargePoints.length}
-            </span>
-          </div>
-        </AmpecoCard>
-      </div>
+      {/* 1/3 width */}
+      <Card
+        header="Total Energy Delivered"
+        showFooter={false}
+        className="md:col-span-4"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">
+            {totalEnergyDelivered.toFixed(2)}
+          </span>
+          <span className="ml-2 text-sm text-gray-500">kWh</span>
+        </div>
+      </Card>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <ChartCard title="Sessions by Status">
-          <SessionsStatusChart sessions={sessions} />
-        </ChartCard>
-        <ChartCard title="Energy Delivered Over Time">
-          <EnergyChart sessions={sessions} />
-        </ChartCard>
-      </div>
+      {/* 1/3 width */}
+      <Card header="Total Revenue" showFooter={false} className="md:col-span-4">
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">${totalRevenue.toFixed(2)}</span>
+        </div>
+      </Card>
 
-      {/* Additional Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <ChartCard title="Revenue Over Time">
-          <RevenueChart sessions={sessions} />
-        </ChartCard>
-        <ChartCard title="Daily Session Count">
-          <DailySessionCountChart sessions={sessions} />
-        </ChartCard>
-      </div>
+      {/* 2/3 width */}
+      <Card
+        header="Total Sessions"
+        showFooter={false}
+        className="md:col-span-8"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{totalSessions}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            session{totalSessions !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </Card>
 
-      {/* Power Consumption Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCard title="Power Consumption">
-          <PowerConsumptionChart sessions={sessions} />
-        </ChartCard>
-      </div>
-    </>
+      {/* 1/4 width */}
+      <Card
+        header="Active Charge Points"
+        showFooter={false}
+        className="md:col-span-3"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{activeChargePoints}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            of {chargePoints.length}
+          </span>
+        </div>
+      </Card>
+
+      {/* 1/4 width */}
+      <Card
+        header="Disabled Charge Points"
+        showFooter={false}
+        className="md:col-span-3"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{disabledChargePoints}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            of {chargePoints.length}
+          </span>
+        </div>
+      </Card>
+
+      {/* 1/4 width */}
+      <Card header="Out of Order" showFooter={false} className="md:col-span-3">
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{outOfOrderChargePoints}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            of {chargePoints.length}
+          </span>
+        </div>
+      </Card>
+
+      {/* 1/4 width */}
+      <Card
+        header="Demo Charge Points"
+        showFooter={false}
+        className="md:col-span-3"
+      >
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold">{demoChargePoints}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            of {chargePoints.length}
+          </span>
+        </div>
+      </Card>
+
+      {/* Full width */}
+      <Card header="Power Consumption" className="md:col-span-12">
+        <PowerConsumptionChart sessions={sessions} />
+      </Card>
+
+      {/* 1/2 width */}
+      <Card header="Sessions by Status" className="md:col-span-6">
+        <SessionsStatusChart sessions={sessions} />
+      </Card>
+
+      {/* 1/2 width */}
+      <Card header="Energy Delivered Over Time" className="md:col-span-6">
+        <EnergyChart sessions={sessions} />
+      </Card>
+
+      {/* 1/2 width */}
+      <Card header="Revenue Over Time" className="md:col-span-6">
+        <RevenueChart sessions={sessions} />
+      </Card>
+
+      {/* 1/2 width */}
+      <Card header="Daily Session Count" className="md:col-span-6">
+        <DailySessionCountChart sessions={sessions} />
+      </Card>
+    </div>
   );
 }

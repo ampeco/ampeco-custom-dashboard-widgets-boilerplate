@@ -4,7 +4,9 @@
 
 ### Added
 
-- **Dashboard Charts**: Comprehensive chart visualizations using Chart component from @ampeco/ampeco-ui
+- **Dashboard Charts**: Demonstration of different chart types and how to use the Card component from @ampeco/ampeco-ui
+  - Layout using Tailwind CSS grid system
+  - Card component implementation from @ampeco/ampeco-ui
   - Sessions by Status (Donut Chart) - Visual distribution of session statuses
   - Energy Delivered Over Time (Area Chart) - Groups sessions by date and displays energy consumption
   - Revenue Over Time (Line Chart) - Revenue trends grouped by date
