@@ -22,6 +22,7 @@ import { useState, useEffect } from "react";
 import { useGet, usePatch } from "@/lib/hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { ApiResponse } from "@/lib/services/api";
 
 // Zod validation schema for charge point
 const chargePointSchema = z.object({
@@ -67,14 +68,8 @@ export function EditChargePointForm() {
 
   // Extract charge points array
   const chargePoints =
-    chargePointsResponse &&
-    typeof chargePointsResponse === "object" &&
-    "data" in chargePointsResponse &&
-    Array.isArray(chargePointsResponse.data)
-      ? chargePointsResponse.data
-      : Array.isArray(chargePointsResponse)
-      ? chargePointsResponse
-      : [];
+    (chargePointsResponse as ApiResponse<Record<string, unknown>[]>)?.data ||
+    [];
 
   // Use URL param if available, otherwise use selectedChargePointId from state
   const chargePointIdToFetch = idFromUrl || selectedChargePointId;

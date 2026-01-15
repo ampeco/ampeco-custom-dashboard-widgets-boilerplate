@@ -106,15 +106,7 @@ export function PowerConsumptionChart({
       curve: "smooth",
       width: 2,
     },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.7,
-        opacityTo: 0.3,
-        stops: [0, 90, 100],
-      },
-    },
+
     markers: {
       size: 4,
       strokeWidth: 2,
@@ -130,7 +122,7 @@ export function PowerConsumptionChart({
         formatter: (value) => `${value} kW`,
       },
     },
-    colors: ["#f59e0b"],
+    colors: ["#0ea5e9"],
   };
 
   const series = [

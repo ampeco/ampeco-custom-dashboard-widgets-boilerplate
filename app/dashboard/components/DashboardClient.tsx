@@ -7,6 +7,7 @@ import { SessionsStatusChart } from "./SessionsStatusChart";
 import { RevenueChart } from "./RevenueChart";
 import { DailySessionCountChart } from "./DailySessionCountChart";
 import { PowerConsumptionChart } from "./PowerConsumptionChart";
+import { ApiResponse } from "@/lib/services/api";
 
 export function DashboardClient() {
   // Fetch data using generic hooks
@@ -55,34 +56,15 @@ export function DashboardClient() {
 
   // Extract data arrays from response (handle both ApiResponse format and direct arrays)
   const chargePoints =
-    chargePointsResponse &&
-    typeof chargePointsResponse === "object" &&
-    "data" in chargePointsResponse &&
-    Array.isArray(chargePointsResponse.data)
-      ? chargePointsResponse.data
-      : Array.isArray(chargePointsResponse)
-      ? chargePointsResponse
-      : [];
+    (chargePointsResponse as ApiResponse<Record<string, unknown>[]>)?.data ||
+    [];
 
   const sessions =
-    sessionsResponse &&
-    typeof sessionsResponse === "object" &&
-    "data" in sessionsResponse &&
-    Array.isArray(sessionsResponse.data)
-      ? sessionsResponse.data
-      : Array.isArray(sessionsResponse)
-      ? sessionsResponse
-      : [];
+    (sessionsResponse as ApiResponse<Record<string, unknown>[]>)?.data || [];
 
   const totalSessions =
-    sessionsResponse &&
-    typeof sessionsResponse === "object" &&
-    "meta" in sessionsResponse &&
-    sessionsResponse.meta &&
-    typeof sessionsResponse.meta === "object" &&
-    "total" in sessionsResponse.meta
-      ? Number(sessionsResponse.meta.total) || 0
-      : sessions.length;
+    (sessionsResponse as ApiResponse<Record<string, unknown>[]>)?.meta?.total ||
+    0;
 
   // Calculate KPIs for charge points by status
   const activeChargePoints = chargePoints.filter(

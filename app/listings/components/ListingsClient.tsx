@@ -11,6 +11,7 @@ import { useGet } from "@/lib/hooks";
 import { SmartTableWrapper } from "./SmartTableWrapper";
 import { SessionsTableWrapper } from "./SessionsTableWrapper";
 import { Pagination, Loader, Message } from "@ampeco/ampeco-ui";
+import { ApiResponse } from "@/lib/services/api";
 
 export function ListingsClient() {
   const [chargePointsPage, setChargePointsPage] = useState(1);
@@ -39,45 +40,20 @@ export function ListingsClient() {
 
   // Extract data arrays from response
   const chargePoints =
-    chargePointsResponse &&
-    typeof chargePointsResponse === "object" &&
-    "data" in chargePointsResponse &&
-    Array.isArray(chargePointsResponse.data)
-      ? chargePointsResponse.data
-      : Array.isArray(chargePointsResponse)
-      ? chargePointsResponse
-      : [];
+    (chargePointsResponse as ApiResponse<Record<string, unknown>[]>)?.data ||
+    [];
 
   const sessions =
-    sessionsResponse &&
-    typeof sessionsResponse === "object" &&
-    "data" in sessionsResponse &&
-    Array.isArray(sessionsResponse.data)
-      ? sessionsResponse.data
-      : Array.isArray(sessionsResponse)
-      ? sessionsResponse
-      : [];
+    (sessionsResponse as ApiResponse<Record<string, unknown>[]>)?.data || [];
 
   // Get pagination metadata
   const chargePointsTotal =
-    chargePointsResponse &&
-    typeof chargePointsResponse === "object" &&
-    "meta" in chargePointsResponse &&
-    chargePointsResponse.meta &&
-    typeof chargePointsResponse.meta === "object" &&
-    "total" in chargePointsResponse.meta
-      ? Number(chargePointsResponse.meta.total) || 0
-      : chargePoints.length;
+    (chargePointsResponse as ApiResponse<Record<string, unknown>[]>)?.meta
+      ?.total || 0;
 
   const sessionsTotal =
-    sessionsResponse &&
-    typeof sessionsResponse === "object" &&
-    "meta" in sessionsResponse &&
-    sessionsResponse.meta &&
-    typeof sessionsResponse.meta === "object" &&
-    "total" in sessionsResponse.meta
-      ? Number(sessionsResponse.meta.total) || 0
-      : sessions.length;
+    (sessionsResponse as ApiResponse<Record<string, unknown>[]>)?.meta?.total ||
+    0;
 
   return (
     <>

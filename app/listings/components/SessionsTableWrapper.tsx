@@ -8,6 +8,7 @@
  */
 
 import { SmartTable } from "@ampeco/ampeco-ui";
+import { format } from "date-fns";
 
 // Generic row type with rowId and computed fields for SmartTable
 type SessionRowWithId = Record<string, unknown> & {
@@ -34,15 +35,11 @@ export function SessionsTableWrapper({ data }: SessionsTableWrapperProps) {
     if (record.startedAt && typeof record.startedAt === "string") {
       try {
         const date = new Date(record.startedAt);
-        dateDisplay = date.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        if (!isNaN(date.getTime())) {
+          dateDisplay = format(date, "MMM d, yyyy, h:mm a");
+        }
       } catch {
-        dateDisplay = record.startedAt.toString();
+        dateDisplay = "N/A";
       }
     }
 
@@ -144,4 +141,3 @@ export function SessionsTableWrapper({ data }: SessionsTableWrapperProps) {
     />
   );
 }
-

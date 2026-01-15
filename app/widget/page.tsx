@@ -9,9 +9,10 @@
 import { useEffect } from "react";
 import { useGet } from "@/lib/hooks";
 import { WidgetLayout } from "@/components/layout/WidgetLayout";
-import { Card } from "@ampeco/ampeco-ui";
+import { Card, Loader, Message } from "@ampeco/ampeco-ui";
 import { autoAdjustHeight } from "@/lib/utils/iframe-communication";
 import { getAmpecoBaseDomain } from "@/lib/config/ampeco";
+import { ApiResponse } from "@/lib/services/api";
 
 export default function WidgetPage() {
   // Fetch active sessions using generic hook with auto-refresh
@@ -28,17 +29,9 @@ export default function WidgetPage() {
   );
 
   // Extract sessions array from response (handle both ApiResponse format and direct arrays)
-  const sessions =
-    sessionsResponse &&
-    typeof sessionsResponse === "object" &&
-    "data" in sessionsResponse &&
-    Array.isArray(sessionsResponse.data)
-      ? sessionsResponse.data
-      : Array.isArray(sessionsResponse)
-      ? sessionsResponse
-      : [];
-
-  const activeSessions = sessions.length;
+  const sessionsTotal =
+    (sessionsResponse as ApiResponse<Record<string, unknown>[]>)?.meta?.total ||
+    0;
 
   useEffect(() => {
     // Auto-adjust iframe height
@@ -50,20 +43,22 @@ export default function WidgetPage() {
 
   return (
     <WidgetLayout>
-      <Card header="Active Sessions" showHeader>
-        {isLoading ? (
-          <div className="text-3xl font-bold text-gray-400">Loading...</div>
-        ) : error ? (
-          <div className="text-sm text-red-600">
-            {error instanceof Error ? error.message : "Failed to load"}
-          </div>
-        ) : (
-          <div className="text-4xl font-bold text-blue-600">
-            {activeSessions}
-          </div>
-        )}
-        <p className="text-xs text-gray-500 mt-2">Currently charging</p>
-      </Card>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader size="sm" />
+        </div>
+      ) : error ? (
+        <Message
+          text={
+            "Error loading sessions: " +
+            (error instanceof Error ? error.message : "Unknown error")
+          }
+        />
+      ) : (
+        <Card header="Total Sessions" showHeader showFooter={false}>
+          <div className="text-4xl font-bold">{sessionsTotal}</div>
+        </Card>
+      )}
     </WidgetLayout>
   );
 }
