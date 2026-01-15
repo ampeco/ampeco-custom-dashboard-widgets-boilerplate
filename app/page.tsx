@@ -1,9 +1,17 @@
-export default function Home() {
-  return (
-    <div className=" flex w-full min-h-screen items-center justify-center py-32 px-16 sm:items-start">
-      <h1 className="text-3xl font-bold text-center">
-        AMPECO Custom Dashboard Widgets Boilerplate
-      </h1>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+interface HomeProps {
+  searchParams: Promise<{
+    token?: string;
+  }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  // Redirect to dashboard by default, preserving token query parameter
+  const params = await searchParams;
+  const token = params.token;
+  const redirectUrl = token
+    ? `/dashboard?token=${encodeURIComponent(token)}`
+    : "/dashboard";
+  redirect(redirectUrl);
 }

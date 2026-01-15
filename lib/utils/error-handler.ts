@@ -23,23 +23,28 @@ export const ERROR_MESSAGES = {
  * Formats API error into user-friendly message
  */
 export function formatApiError(error: unknown): string {
-  if (error && typeof error === "object" && "message" in error) {
+  // Check for ApiError type (has status property)
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    "status" in error
+  ) {
     const apiError = error as ApiError;
     return apiError.message || ERROR_MESSAGES.API_ERROR;
   }
 
+  // Check for Error instances and apply pattern matching
   if (error instanceof Error) {
-    // Check for specific error types
-    if (error.message.includes("expired")) {
+    const message = error.message.toLowerCase();
+    // Check for specific error types (case-insensitive)
+    if (message.includes("expired")) {
       return ERROR_MESSAGES.JWT_EXPIRED;
     }
-    if (
-      error.message.includes("signature") ||
-      error.message.includes("invalid")
-    ) {
+    if (message.includes("signature") || message.includes("invalid")) {
       return ERROR_MESSAGES.JWT_INVALID;
     }
-    if (error.message.includes("network") || error.message.includes("fetch")) {
+    if (message.includes("network") || message.includes("fetch")) {
       return ERROR_MESSAGES.NETWORK_ERROR;
     }
     return error.message;
