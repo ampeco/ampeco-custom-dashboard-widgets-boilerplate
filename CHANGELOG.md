@@ -1,5 +1,19 @@
 # AMPECO Custom Dashboard Widgets Boilerplate
 
+## 0.5.0
+
+### Added
+
+- **Comprehensive Documentation**: Complete documentation overhaul
+  - README.md: Added deploy button setup instructions
+  - INTEGRATION_GUIDE.md: Added comprehensive integration guide with examples and patterns
+  - CLAUDE.md: Added AI development context
+
+### Cleaned up
+
+- Removed unused environment variables from .env.example
+- Removed unused server actions
+
 ## 0.4.0 (feat/example-pages)
 
 ### Added
