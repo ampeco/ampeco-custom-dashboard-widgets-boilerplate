@@ -33,10 +33,7 @@ export default async function ListingsPage({
 
   return (
     <DashboardLayout searchParams={params}>
-      <div className="px-4 py-8">
-        <h1>Listings</h1>
-        <ListingsClient />
-      </div>
+      <ListingsClient />
     </DashboardLayout>
   );
 }

@@ -8,14 +8,14 @@
  */
 
 import { useEffect } from "react";
+import { Button } from "@ampeco/ampeco-ui";
 
-export default function Error({
-  error,
-  reset,
-}: {
+interface ErrorPageProps {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}
+
+export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
     // Log error to console in development
     if (process.env.NODE_ENV === "development") {
@@ -24,20 +24,12 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <div className="max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-        <p className="text-gray-600 mb-6">
-          {error.message || "An unexpected error occurred. Please try again."}
-        </p>
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Try again
-        </button>
-      </div>
+    <div className="flex flex-col items-center justify-center my-10">
+      <h1>Something went wrong</h1>
+      <p>
+        {error.message || "An unexpected error occurred. Please try again."}
+      </p>
+      <Button onClick={reset}>Try again</Button>
     </div>
   );
 }
-

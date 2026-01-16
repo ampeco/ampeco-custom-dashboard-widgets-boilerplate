@@ -25,13 +25,11 @@ export default async function EditResourcePage({
   if (!jwtContext) {
     return (
       <DashboardLayout searchParams={params}>
-        <div className="px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">
-              Authentication error. Please ensure the widget is loaded from
-              AMPECO backend.
-            </p>
-          </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">
+            Authentication error. Please ensure the widget is loaded from AMPECO
+            backend.
+          </p>
         </div>
       </DashboardLayout>
     );
@@ -39,8 +37,7 @@ export default async function EditResourcePage({
 
   return (
     <DashboardLayout searchParams={params}>
-      <div className="px-4 py-8 max-w-md mx-auto">
-        <h1>Edit Charge Point</h1>
+      <div className="max-w-md mx-auto">
         <EditChargePointForm />
       </div>
     </DashboardLayout>
