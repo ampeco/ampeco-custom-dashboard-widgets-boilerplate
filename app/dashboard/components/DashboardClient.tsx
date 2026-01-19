@@ -30,10 +30,8 @@ export function DashboardClient() {
   // Show loading state
   if (isLoadingChargePoints || isLoadingSessions) {
     return (
-      <div className="px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading dashboard data...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading dashboard data...</div>
       </div>
     );
   }
@@ -43,13 +41,11 @@ export function DashboardClient() {
     const errorMessage =
       chargePointsError?.message || sessionsError?.message || "Unknown error";
     return (
-      <div className="px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-red-800 mb-2">
-            Error Loading Dashboard
-          </h2>
-          <p className="text-red-700">{errorMessage}</p>
-        </div>
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <h2 className="text-lg font-semibold text-red-800 mb-2">
+          Error Loading Dashboard
+        </h2>
+        <p className="text-red-700">{errorMessage}</p>
       </div>
     );
   }
@@ -122,7 +118,7 @@ export function DashboardClient() {
   }, 0);
 
   return (
-    <div className="grid md:grid-cols-12 gap-4 mb-8">
+    <div className="grid md:grid-cols-12 gap-4">
       {/* 2/3 width */}
       <Card
         header="Active Sessions"

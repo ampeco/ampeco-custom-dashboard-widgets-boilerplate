@@ -23,13 +23,11 @@ export default async function FormPage({ searchParams }: FormPageProps) {
   if (!jwtContext) {
     return (
       <DashboardLayout searchParams={params}>
-        <div className="px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">
-              Authentication error. Please ensure the widget is loaded from
-              AMPECO backend.
-            </p>
-          </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">
+            Authentication error. Please ensure the widget is loaded from AMPECO
+            backend.
+          </p>
         </div>
       </DashboardLayout>
     );
@@ -37,10 +35,7 @@ export default async function FormPage({ searchParams }: FormPageProps) {
 
   return (
     <DashboardLayout searchParams={params}>
-      <div className="px-4 py-8">
-        <h1>Form Demo</h1>
-        <DemoForm />
-      </div>
+      <DemoForm />
     </DashboardLayout>
   );
 }

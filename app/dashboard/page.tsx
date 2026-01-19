@@ -30,10 +30,7 @@ export default async function DashboardPage({
 
   return (
     <DashboardLayout searchParams={params}>
-      <div className="px-4 py-8">
-        <h1>Dashboard</h1>
-        <DashboardClient />
-      </div>
+      <DashboardClient />
     </DashboardLayout>
   );
 }
