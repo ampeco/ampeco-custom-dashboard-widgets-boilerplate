@@ -1,5 +1,14 @@
 # AMPECO Custom Dashboard Widgets Boilerplate
 
+## 0.5.1 (feat/changed-jwt-payload)
+
+- Updated JWT payload to include `admin_id` instead of `user_id`
+- Updated JWT verification endpoint to use `/.well-known/jwks.json` instead of `/api/v1/marketplace/public-key`
+- Fixed security vulnerabilities in Next.js by updating from 16.0.10 to 16.1.6
+  - Fixed DoS vulnerability via Image Optimizer remotePatterns configuration
+  - Fixed unbounded memory consumption via PPR Resume Endpoint
+  - Fixed HTTP request deserialization DoS when using insecure React Server Components
+
 ## 0.5.0
 
 ### Added
