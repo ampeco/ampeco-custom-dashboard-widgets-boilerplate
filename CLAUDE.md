@@ -40,7 +40,7 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 {
   iss: string;              // AMPECO tenant URL
   aud: string | string[];   // Widget domain
-  user_id: number;          // Admin user ID
+  admin_id: number;          // Admin user ID
   app_id: number;           // Integration ID
   widget_id: number;        // Widget instance ID
   widget_name: string;      // Widget name

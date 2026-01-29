@@ -15,7 +15,7 @@ import { getAmpecoConfig } from "@/lib/config/ampeco";
 export interface AmpecoJwtPayload extends JWTPayload {
   iss: string; // Issuer (AMPECO tenant URL)
   aud: string | string[]; // Audience (widget domain)
-  user_id: number;
+  admin_id: number;
   app_id: number;
   widget_id: number;
   widget_name: string;
@@ -124,12 +124,12 @@ export async function verifyJwt(
 
     // Validate required claims
     if (
-      !ampecoPayload.user_id ||
+      !ampecoPayload.admin_id ||
       !ampecoPayload.app_id ||
       !ampecoPayload.widget_id
     ) {
       throw new Error(
-        "Missing required JWT claims (user_id, app_id, widget_id)"
+        "Missing required JWT claims (admin_id, app_id, widget_id)"
       );
     }
 

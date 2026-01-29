@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
     // Store JWT payload in request headers for Server Components
     // Note: Headers are immutable in Next.js, so we use a custom header
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-ampeco-user-id", payload.user_id.toString());
+    requestHeaders.set("x-ampeco-admin-id", payload.admin_id.toString());
     requestHeaders.set("x-ampeco-app-id", payload.app_id.toString());
     requestHeaders.set("x-ampeco-widget-id", payload.widget_id.toString());
     requestHeaders.set("x-ampeco-impersonate", payload.impersonate.toString());

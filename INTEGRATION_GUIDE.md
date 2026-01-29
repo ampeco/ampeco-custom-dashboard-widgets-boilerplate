@@ -256,7 +256,7 @@ Before deploying, test your widget locally:
    - Open Console tab
    - Decode JWT token (use `jwt.io` or browser extension)
    - Verify payload includes:
-     - `user_id` - Admin user ID
+     - `admin_id` - Admin user ID
      - `app_id` - Integration ID
      - `widget_id` - Widget instance ID
      - `impersonate: true` - Required for API calls
