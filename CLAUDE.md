@@ -29,7 +29,7 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 
 1. **Token Reception**: JWT token arrives via `?token=` query parameter when AMPECO loads the widget in iframe
 2. **Token Extraction**: Middleware (`middleware.ts`) extracts token from query param or Authorization header
-3. **Public Key Fetch**: Fetches public key from `https://{tenant}/api/v1/marketplace/public-key`
+3. **Public Key Fetch**: Fetches public key from `https://{tenant}/.well-known/jwks.json`
 4. **Token Verification**: Verifies ES256 signature, validates issuer, audience, expiration
 5. **Context Storage**: Stores validated JWT payload in request headers for Server Components
 6. **API Impersonation**: When `impersonate: true`, API calls use format: `Bearer {api_token}:{jwt_token}`
@@ -53,7 +53,7 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 
 ### Public Key Verification
 
-- **Endpoint**: `GET https://{tenant}/api/v1/marketplace/public-key`
+- **Endpoint**: `GET https://{tenant}/.well-known/jwks.json`
 - **Format**: JWKS (JSON Web Key Set)
 - **Algorithm**: ES256 (ECDSA P-256)
 - **Caching**: 1 hour (in-memory cache)

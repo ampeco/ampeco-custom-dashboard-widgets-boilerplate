@@ -58,7 +58,7 @@ export function getAmpecoConfig(): AmpecoConfig {
     baseDomain,
     apiToken,
     urls: {
-      publicKey: `https://${baseDomain}/api/v1/marketplace/public-key`,
+      publicKey: `https://${baseDomain}/.well-known/jwks.json`,
       apiBase: `https://${baseDomain}/public-api/resources`,
       tenant: `https://${baseDomain}`,
     },
