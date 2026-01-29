@@ -15,7 +15,7 @@ import { getAmpecoConfig } from "@/lib/config/ampeco";
 export interface AmpecoJwtPayload extends JWTPayload {
   iss: string; // Issuer (AMPECO tenant URL)
   aud: string | string[]; // Audience (widget domain)
-  user_id: number;
+  admin_id: number;
   app_id: number;
   widget_id: number;
   widget_name: string;
@@ -44,13 +44,14 @@ async function getPublicKeyUrl(
     return cached;
   }
 
-  // Fetch from API
+  // Fetch from API to validate it exists
   try {
     const response = await fetch(publicKeyUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${apiToken}`,
+        // Note: .well-known/jwks.json is typically public, but keeping auth for compatibility
+        ...(apiToken && { Authorization: `Bearer ${apiToken}` }),
       },
     });
 
@@ -68,16 +69,19 @@ async function getPublicKeyUrl(
     }
 
     // Define a type for JWK to avoid 'any'
-    type JWK = { kid?: string; alg?: string };
+    type JWK = { kid?: string; alg?: string; kty?: string };
 
-    // Find key with kid="1" and alg="ES256"
-    const key = jwks.keys.find((k: JWK) => k.kid === "1" && k.alg === "ES256");
+    // Validate at least one ES256 key exists
+    // Note: jose library will automatically select the correct key based on kid from JWT token
+    const hasEs256Key = jwks.keys.some(
+      (k: JWK) => k.alg === "ES256" || k.kty === "EC"
+    );
 
-    if (!key) {
-      throw new Error("No matching key found in JWKS (kid=1, alg=ES256)");
+    if (!hasEs256Key) {
+      throw new Error("No ES256 key found in JWKS");
     }
 
-    // Cache the URL (jose library will handle caching internally)
+    // Cache the URL (jose library will handle key selection internally)
     publicKeyCache.set(publicKeyUrl, publicKeyUrl);
 
     return publicKeyUrl;
@@ -124,12 +128,12 @@ export async function verifyJwt(
 
     // Validate required claims
     if (
-      !ampecoPayload.user_id ||
+      !ampecoPayload.admin_id ||
       !ampecoPayload.app_id ||
       !ampecoPayload.widget_id
     ) {
       throw new Error(
-        "Missing required JWT claims (user_id, app_id, widget_id)"
+        "Missing required JWT claims (admin_id, app_id, widget_id)"
       );
     }
 

@@ -26,7 +26,7 @@ describe("Ampeco Config", () => {
       expect(config.baseDomain).toBe("demo.charge.ampeco.tech");
       expect(config.apiToken).toBe("sk_test_token");
       expect(config.urls.publicKey).toBe(
-        "https://demo.charge.ampeco.tech/api/v1/marketplace/public-key"
+        "https://demo.charge.ampeco.tech/.well-known/jwks.json"
       );
       expect(config.urls.apiBase).toBe(
         "https://demo.charge.ampeco.tech/public-api/resources"

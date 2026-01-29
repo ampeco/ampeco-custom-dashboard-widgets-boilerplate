@@ -11,7 +11,7 @@ import { headers } from "next/headers";
  * JWT Context extracted from request headers
  */
 export interface JwtContext {
-  userId: number;
+  adminId: number;
   appId: number;
   widgetId: number;
   impersonate: boolean;
@@ -26,19 +26,19 @@ export interface JwtContext {
 export async function getJwtContext(): Promise<JwtContext | null> {
   const headersList = await headers();
 
-  const userId = headersList.get("x-ampeco-user-id");
+  const adminId = headersList.get("x-ampeco-admin-id");
   const appId = headersList.get("x-ampeco-app-id");
   const widgetId = headersList.get("x-ampeco-widget-id");
   const impersonate = headersList.get("x-ampeco-impersonate");
   const jwtToken = headersList.get("x-ampeco-jwt-token");
   const tenantUrl = headersList.get("x-ampeco-tenant-url");
 
-  if (!userId || !appId || !widgetId || !jwtToken) {
+  if (!adminId || !appId || !widgetId || !jwtToken) {
     return null;
   }
 
   return {
-    userId: parseInt(userId, 10),
+    adminId: parseInt(adminId, 10),
     appId: parseInt(appId, 10),
     widgetId: parseInt(widgetId, 10),
     impersonate: impersonate === "true",
