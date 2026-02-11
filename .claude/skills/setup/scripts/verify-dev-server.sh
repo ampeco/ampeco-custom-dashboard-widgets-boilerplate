@@ -4,11 +4,14 @@
 # Default port: 3000
 # If the port is in use, reports the PID and exits (does NOT kill it).
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_platform.sh"
+
 PORT="${1:-3000}"
 echo "port=$PORT"
 
 # Check if port is in use
-EXISTING_PID=$(lsof -ti :"$PORT" 2>/dev/null)
+EXISTING_PID=$(get_port_pids "$PORT" | head -1)
 if [ -n "$EXISTING_PID" ]; then
     echo "port_status=in_use"
     echo "port_pid=$EXISTING_PID"
@@ -52,13 +55,18 @@ if [ "$HEALTH_OK" = false ]; then
 fi
 
 # Stop the dev server
-lsof -ti :"$PORT" 2>/dev/null | xargs kill 2>/dev/null
-sleep 1
+PORT_PIDS=$(get_port_pids "$PORT")
+if [ -n "$PORT_PIDS" ]; then
+    # shellcheck disable=SC2086
+    kill_pids $PORT_PIDS
+    sleep 1
+fi
 
 # Verify it's stopped
-REMAINING=$(lsof -ti :"$PORT" 2>/dev/null)
+REMAINING=$(get_port_pids "$PORT")
 if [ -n "$REMAINING" ]; then
-    kill -9 $REMAINING 2>/dev/null
+    # shellcheck disable=SC2086
+    force_kill_pids $REMAINING
 fi
 
 echo "server_stopped=true"

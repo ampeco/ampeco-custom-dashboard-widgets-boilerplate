@@ -10,8 +10,12 @@ if [ -z "$DOMAIN" ]; then
     exit 0
 fi
 
-# Sanitize: strip protocol and trailing slash
-DOMAIN=$(echo "$DOMAIN" | sed 's|^https\?://||' | sed 's|/\+$||')
+# Sanitize: strip protocol and trailing slashes (pure bash — portable across macOS, Linux, Windows Git Bash/WSL)
+DOMAIN="${DOMAIN#https://}"
+DOMAIN="${DOMAIN#http://}"
+while [[ "$DOMAIN" == */ ]]; do
+    DOMAIN="${DOMAIN%/}"
+done
 echo "sanitized_domain=$DOMAIN"
 
 # Verify JWKS endpoint (-k skips SSL verification for dev environments)

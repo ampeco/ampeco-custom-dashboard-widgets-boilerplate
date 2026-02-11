@@ -2,6 +2,9 @@
 # Kill process on a given port
 # Usage: kill-port.sh <port>
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_platform.sh"
+
 PORT="$1"
 
 if [ -z "$PORT" ]; then
@@ -9,16 +12,18 @@ if [ -z "$PORT" ]; then
     exit 0
 fi
 
-PID=$(lsof -ti :"$PORT" 2>/dev/null)
-if [ -n "$PID" ]; then
-    kill $PID 2>/dev/null
+PIDS=$(get_port_pids "$PORT")
+if [ -n "$PIDS" ]; then
+    # shellcheck disable=SC2086
+    kill_pids $PIDS
     sleep 1
     # Force kill if still running
-    REMAINING=$(lsof -ti :"$PORT" 2>/dev/null)
+    REMAINING=$(get_port_pids "$PORT")
     if [ -n "$REMAINING" ]; then
-        kill -9 $REMAINING 2>/dev/null
+        # shellcheck disable=SC2086
+        force_kill_pids $REMAINING
     fi
-    echo "killed_pid=$PID"
+    echo "killed_pid=$PIDS"
     echo "status=killed"
 else
     echo "status=no_process_found"

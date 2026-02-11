@@ -4,16 +4,16 @@ description: Interactive setup wizard for AMPECO Custom Dashboard Widgets boiler
 disable-model-invocation: true
 allowed-tools:
   - Read
-  - Write(.env)
+  - Write(*.env)
   - Grep
   - Glob
   - AskUserQuestion
-  # All setup phase scripts
-  - Bash(bash .claude/skills/setup/scripts/check-env.sh*)
-  - Bash(bash .claude/skills/setup/scripts/verify-domain.sh*)
-  - Bash(bash .claude/skills/setup/scripts/install-deps.sh*)
-  - Bash(bash .claude/skills/setup/scripts/verify-dev-server.sh*)
-  - Bash(bash .claude/skills/setup/scripts/kill-port.sh*)
+  # All setup phase scripts (patterns use * prefix to match both relative and absolute paths)
+  - Bash(bash *setup/scripts/check-env.sh*)
+  - Bash(bash *setup/scripts/verify-domain.sh*)
+  - Bash(bash *setup/scripts/install-deps.sh*)
+  - Bash(bash *setup/scripts/verify-dev-server.sh*)
+  - Bash(bash *setup/scripts/kill-port.sh*)
 ---
 
 # /setup — AMPECO Custom Widget Local Development Setup Wizard
