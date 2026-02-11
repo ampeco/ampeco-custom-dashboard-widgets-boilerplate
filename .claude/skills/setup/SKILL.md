@@ -4,7 +4,6 @@ description: Interactive setup wizard for AMPECO Custom Dashboard Widgets boiler
 disable-model-invocation: true
 allowed-tools:
   - Read
-  - Write(*.env)
   - Grep
   - Glob
   - AskUserQuestion
@@ -14,6 +13,7 @@ allowed-tools:
   - Bash(bash *setup/scripts/install-deps.sh*)
   - Bash(bash *setup/scripts/verify-dev-server.sh*)
   - Bash(bash *setup/scripts/kill-port.sh*)
+  - Bash(bash *setup/scripts/write-env.sh*)
 ---
 
 # /setup — AMPECO Custom Widget Local Development Setup Wizard
@@ -42,6 +42,7 @@ Available scripts:
 - `install-deps.sh [--legacy-peer-deps]` — Phase 2a: npm install + verify
 - `verify-dev-server.sh [port]` — Phase 2b: start dev server, health check, stop (default port: 3000)
 - `kill-port.sh <port>` — Kill process on a given port
+- `write-env.sh <domain> <api_token>` — Phase 1d: write .env file (creates or updates)
 
 ---
 
@@ -110,15 +111,20 @@ The user will paste their token as the next message. Mask it when confirming.
 
 ### Step 1d: Write `.env`
 
-Write (or update) the `.env` file with the required variables:
+Use the write-env script to create (or update) the `.env` file — do NOT use the Write tool (it triggers a permission prompt):
 
-```
-AMPECO_BASE_DOMAIN=<sanitized_domain>
-AMPECO_API_TOKEN=<api_token>
-NODE_ENV=development
+```bash
+bash .claude/skills/setup/scripts/write-env.sh "<sanitized_domain>" "<api_token>"
 ```
 
-Show the contents with masked secrets after writing.
+The script outputs `result=created` or `result=updated`. After writing, show the contents with masked secrets:
+
+```
+.env created:
+  AMPECO_BASE_DOMAIN=<sanitized_domain>
+  AMPECO_API_TOKEN=<first4>...<last4>
+  NODE_ENV=development
+```
 
 ---
 
@@ -165,51 +171,36 @@ Parse the output:
 
 ## Phase 3: Widget Registration in AMPECO
 
-**Goal:** Guide the user through registering their widget in the AMPECO tenant.
+**Goal:** Guide the user through installing, configuring, and adding their widget to a dashboard.
 
 This phase is informational — provide step-by-step instructions:
 
-1. **Navigate to the Marketplace:**
+1. **Install and configure the Custom Widget:**
    - Log into your AMPECO tenant at `https://<AMPECO_BASE_DOMAIN>`
-   - Go to **Marketplace** (in the left sidebar)
-   - Click **Catalog**
+   - Go to **Marketplace → Catalog** and find **Custom Widget**
+   - Click **Install** (skip if already installed)
+   - Configure the widget:
+   - **Name:** A descriptive name (e.g., "My Custom Dashboard")
+   - **URL:** `http://localhost:3000/dashboard` (or whichever route you want to display)
+   - **Enable Impersonation:** Toggle ON — this lets the widget make API calls on behalf of the logged-in admin, so data is automatically filtered by their permissions
+   - **Sandbox options:** Enable **Allow Scripts**, **Allow Forms**, **Allow Same Origin** — these are required for the iframe to run JavaScript, submit forms, and communicate with the parent page
 
-2. **Find or install Custom Widgets:**
-   - Look for **Custom Widgets** in the catalog
-   - If not installed, click **Install**
+2. **Add the widget to a Dashboard:**
+   - Navigate to **System → Dashboards**
+   - Click **Edit** on the dashboard where you want the widget (e.g., Main Dashboard)
+   - Select the **Widgets** tab
+   - Add the custom widget you just created
+   - Click **Update Dashboard** to save
 
-3. **Create a new widget:**
-   - Go to **Marketplace → Custom Widgets** (after installation)
-   - Click **Create Widget** (or **Add**)
-   - Fill in the details:
-     - **Name:** Give your widget a descriptive name (e.g., "My Custom Dashboard")
-     - **URL:** `http://localhost:3000/dashboard` (or whichever route you want to display)
-     - **Enable Impersonation:** Toggle ON (recommended — this enables automatic data filtering based on admin permissions)
-
-4. **Configure sandbox options:**
-   - Enable: **Allow Scripts**, **Allow Forms**, **Allow Same Origin**
-   - These are needed for the iframe to function properly
-
-5. **Assign to a resource:**
-   - Choose where the widget appears (e.g., Dashboard)
-   - Save the configuration
-
-6. Tell the user: "After saving, navigate to the resource where you assigned the widget. You should see the widget loaded in an iframe."
+3. **Verify it works:**
+   - Navigate to the dashboard you just edited (e.g., `https://<AMPECO_BASE_DOMAIN>/admin/dashboards/main` for the Main Dashboard)
+   - You should see the widget loaded in an iframe with data
 
 ---
 
-## Phase 4: Verification & Wrap-up
+## Phase 4: Troubleshooting & Wrap-up
 
-### Verify end-to-end
-
-Guide the user through verifying everything works:
-
-1. "Open the AMPECO page where you assigned the widget. The widget should load inside an iframe."
-2. "If you see data loading, everything is working correctly!"
-
-### Troubleshoot common issues
-
-If the widget doesn't work, guide through these checks:
+If the widget doesn't load or shows errors, guide through these checks:
 
 - **"Missing JWT token" error:** The widget URL needs to be loaded through the AMPECO iframe (which appends the JWT token). Directly visiting `http://localhost:3000/dashboard` will show this error — that's expected.
 - **JWT verification failed:** Check that `AMPECO_BASE_DOMAIN` matches the tenant that issued the JWT. Also check that the widget's audience URL matches your dev server URL.
