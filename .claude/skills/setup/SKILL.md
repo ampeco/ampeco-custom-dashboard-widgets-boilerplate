@@ -2,7 +2,18 @@
 name: setup
 description: Interactive setup wizard for AMPECO Custom Dashboard Widgets boilerplate. Guides through environment variables, dependency installation, dev server startup, and widget registration.
 disable-model-invocation: true
-allowed-tools: Bash(*), Read, Write(.env), Grep, Glob, AskUserQuestion
+allowed-tools:
+  - Read
+  - Write(.env)
+  - Grep
+  - Glob
+  - AskUserQuestion
+  # All setup phase scripts
+  - Bash(bash .claude/skills/setup/scripts/check-env.sh*)
+  - Bash(bash .claude/skills/setup/scripts/verify-domain.sh*)
+  - Bash(bash .claude/skills/setup/scripts/install-deps.sh*)
+  - Bash(bash .claude/skills/setup/scripts/verify-dev-server.sh*)
+  - Bash(bash .claude/skills/setup/scripts/kill-port.sh*)
 ---
 
 # /setup — AMPECO Custom Widget Local Development Setup Wizard
@@ -22,23 +33,27 @@ You are an interactive setup wizard. Guide the user step-by-step through configu
 - Use the `AskUserQuestion` tool for binary or multiple-choice decisions (e.g., "Skip to Phase 2?", "Kill process on port 3000?", "Update existing .env or keep it?"). This gives the user clickable options instead of requiring free-form text input.
 - Read `.claude/skills/setup/setup-reference.md` for detailed troubleshooting when errors occur.
 
+**Important — use the setup scripts for ALL shell operations:**
+All bash commands are wrapped in scripts under `.claude/skills/setup/scripts/`. Always use `bash .claude/skills/setup/scripts/<script>.sh [args]` instead of running raw shell commands. This ensures all commands are pre-allowed and the user is not prompted for permission.
+
+Available scripts:
+- `check-env.sh` — Phase 0: environment detection (node, npm, .env, node_modules)
+- `verify-domain.sh <domain>` — Phase 1: sanitize domain and check JWKS endpoint
+- `install-deps.sh [--legacy-peer-deps]` — Phase 2a: npm install + verify
+- `verify-dev-server.sh [port]` — Phase 2b: start dev server, health check, stop (default port: 3000)
+- `kill-port.sh <port>` — Kill process on a given port
+
 ---
 
 ## Phase 0: Environment Detection
 
-Run these checks and present a status summary table.
+Run the environment check script:
 
-**Important:** When running checks in parallel with the Bash tool, ensure every command exits with code 0 — even when detecting "not found" states. If one parallel Bash call exits non-zero, sibling calls will cascade-fail with "Sibling tool call errored". Use `|| echo "not found"` or `|| true` patterns to guarantee exit code 0.
+```bash
+bash .claude/skills/setup/scripts/check-env.sh
+```
 
-1. **Node.js**: Run `node --version`. Require `>= 20.9.0` (from `package.json` engines field). If missing or too old, stop and tell the user to install/upgrade Node.js (recommend `nvm` or the official installer). Do NOT proceed past this phase if Node.js is missing or below the required version.
-
-2. **npm**: Run `npm --version` to confirm it's available.
-
-3. **Existing `.env`**: Use the Read tool to check if `.env` exists in the project root. If it exists, note which variables are already set (without revealing secret values — mask them). If the file doesn't exist, the Read tool will return an error — that's fine, just report it as "not found".
-
-4. **`node_modules`**: Check if the directory exists and if `@ampeco/ampeco-ui` is installed inside it (`node_modules/@ampeco/ampeco-ui/package.json`).
-
-Present the results as a summary, for example:
+The script outputs `key=value` pairs. Parse them and present a formatted summary:
 
 ```
 Setup Status:
@@ -48,8 +63,9 @@ Setup Status:
   node_modules:  exists (@ampeco/ampeco-ui installed)
 ```
 
-If `--skip-check` is passed, skip this phase entirely.
-If `--resume` is passed, use this detection to determine which phases to skip.
+- If `node_version=not_found` or the version is below `20.9.0`, stop and tell the user to install/upgrade Node.js (recommend `nvm` or the official installer). Do NOT proceed past this phase.
+- If `--skip-check` is passed, skip this phase entirely.
+- If `--resume` is passed, use this detection to determine which phases to skip.
 
 ---
 
@@ -59,7 +75,7 @@ If `--resume` is passed, use this detection to determine which phases to skip.
 
 ### Step 1a: Check existing `.env`
 
-If `.env` does NOT exist:
+If `.env` does NOT exist (check-env reported `env_file=not_found`):
 - It will be created in Step 1d after collecting all values. No need to copy `.env.example`.
 
 If `.env` already exists:
@@ -68,25 +84,29 @@ If `.env` already exists:
 
 ### Step 1b: `AMPECO_BASE_DOMAIN`
 
-1. Ask the user for their AMPECO tenant domain.
-2. **Sanitize the input:**
-   - Strip `https://` or `http://` prefix if present
-   - Strip trailing `/` if present
-   - Note: The runtime `normalizeDomain()` in `lib/config/ampeco.ts` strips protocol but does NOT strip trailing slashes, so we must catch that here.
-3. **Verify connectivity:** Test the domain by fetching the JWKS endpoint. Use `-k` to skip SSL verification since dev environments (e.g., `.dev.ampeco.tech`) often have self-signed or invalid certificates:
+**Directly ask for the value** — do NOT use AskUserQuestion here. Just output a text prompt like:
+
+> Please enter your AMPECO tenant domain (e.g., `demo.charge.ampeco.tech`, without `https://`):
+
+The user will type their domain as the next message. Once received, verify connectivity:
 
 ```bash
-curl -sk -o /dev/null -w "%{http_code}" "https://<domain>/.well-known/jwks.json"
+bash .claude/skills/setup/scripts/verify-domain.sh "<user_input>"
 ```
 
-   - **200**: Domain is reachable and the JWKS endpoint works.
-   - **404/403**: Domain is reachable but JWKS endpoint not found. Warn but allow proceeding.
-   - **000 or connection error**: Domain is not reachable. Ask the user to double-check.
+The script sanitizes the input (strips protocol and trailing slashes) and checks the JWKS endpoint. Parse the output:
+- `sanitized_domain=<clean_domain>` — use this value for `.env`
+- `http_status=200` — domain is reachable, JWKS works
+- `http_status=404` or `403` — domain reachable but JWKS not found. Warn but allow proceeding.
+- `http_status=000` or connection error — domain not reachable. Ask the user to double-check.
 
 ### Step 1c: `AMPECO_API_TOKEN`
 
-1. Ask the user for their AMPECO API token. Tell them it can be found at: **AMPECO Dashboard → Settings → API Tokens**.
-2. When confirming, mask the token value.
+**Directly ask for the value** — do NOT use AskUserQuestion here. Just output a text prompt like:
+
+> Please enter your AMPECO API token (found at: **AMPECO Dashboard → Settings → API Tokens**):
+
+The user will paste their token as the next message. Mask it when confirming.
 
 ### Step 1d: Write `.env`
 
@@ -106,55 +126,40 @@ Show the contents with masked secrets after writing.
 
 ### Step 2a: npm install
 
-1. Run `npm install`:
+Run the install script:
 
 ```bash
-npm install
+bash .claude/skills/setup/scripts/install-deps.sh
 ```
 
-2. Handle common failures:
-   - **ERESOLVE / dependency conflicts**: Suggest `npm install --legacy-peer-deps`. Ask before running.
-   - **Missing build tools (macOS)**: If native module compilation fails, suggest installing Xcode CLI tools: `xcode-select --install`
+Parse the output:
+- `install_exit_code=0` and `ampeco_ui=installed` — success
+- `install_exit_code!=0` — check for ERESOLVE errors in the output, suggest running with `--legacy-peer-deps`:
 
-3. Verify success by checking that `node_modules/@ampeco/ampeco-ui` exists.
+```bash
+bash .claude/skills/setup/scripts/install-deps.sh --legacy-peer-deps
+```
+
+Ask the user before running the fallback.
 
 ### Step 2b: Verify dev server
 
-**Goal:** Start the dev server temporarily to verify it works, then stop it and tell the user how to start it manually.
-
-1. Check if port 3000 is already in use:
+Run the dev server verification script (it starts the server, health-checks it, and stops it automatically):
 
 ```bash
-lsof -i :3000 -t
+bash .claude/skills/setup/scripts/verify-dev-server.sh
 ```
 
-   - If a process is found, tell the user and ask if they want to kill it before proceeding.
+Parse the output:
 
-2. Start the dev server in the background using the Bash tool with `run_in_background: true`:
+- **`port_status=in_use`** with `port_pid=<pid>`: The port is occupied. Use `AskUserQuestion` to offer choices:
+  - **Kill the process**: Run `bash .claude/skills/setup/scripts/kill-port.sh <port>`, then re-run verify
+  - **Use a different port**: Re-run with an alternate port, e.g. `bash .claude/skills/setup/scripts/verify-dev-server.sh 3001`
+  - **Skip verification**: Move on without verifying
 
-```bash
-npm run dev
-```
+- **`health_check=ok`**: Success. Tell the user: "The dev server starts correctly. When you're ready to develop, start it in a separate terminal with `npm run dev`."
 
-   Note: This runs `next dev --turbo` (Turbopack). If port 3000 was in use, use `npm run dev -- --port <port>`.
-
-3. Wait a few seconds for the server to start, then verify with a health check:
-
-```bash
-curl -s http://localhost:3000/api/health
-```
-
-   - Expected response: `{"status":"ok","timestamp":"...","service":"ampeco-custom-widget-template"}`
-   - If the health check fails, wait a few more seconds and retry (the server may still be compiling).
-   - If it still fails, read the background task output for error details.
-
-4. Once the health check passes, **stop the dev server** by killing the process on port 3000:
-
-```bash
-lsof -ti :3000 | xargs kill
-```
-
-5. Tell the user: "The dev server starts correctly. When you're ready to develop, start it in a separate terminal with `npm run dev`."
+- **`health_check=failed`**: Show the dev server log from the output and help troubleshoot.
 
 ---
 
