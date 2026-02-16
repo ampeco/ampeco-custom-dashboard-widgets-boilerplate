@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 
+/.idea/
+
 # testing
 /coverage
 
@@ -42,3 +44,4 @@ yarn-error.log*
 next-env.d.ts
 
 .cursor
+/.claude/settings.local.json

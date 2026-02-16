@@ -153,7 +153,6 @@ ampeco-custom-widget-template/
 
    - `AMPECO_BASE_DOMAIN` - Your AMPECO tenant domain (e.g., `demo.charge.ampeco.tech`)
    - `AMPECO_API_TOKEN` - Your AMPECO API token (from Settings > API Tokens)
-   - `NPM_TOKEN` - GitHub token with `read:packages` for installing `@ampeco/ampeco-ui`
    - `NODE_ENV` - development
 
 4. **Start development server**
