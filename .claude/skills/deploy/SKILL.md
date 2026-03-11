@@ -40,7 +40,7 @@ If the user is deploying for the first time or wants to use the deploy button:
 
 **Deploy Button URL structure:**
 ```
-https://vercel.com/new/clone?repository-url=https://github.com/{username}/{repo}&env=AMPECO_BASE_DOMAIN,AMPECO_API_TOKEN,NPM_TOKEN
+https://vercel.com/new/clone?repository-url=https://github.com/{username}/{repo}&env=AMPECO_BASE_DOMAIN,AMPECO_API_TOKEN
 ```
 
 #### Option B: Manual Vercel Setup (Existing Project)
@@ -71,20 +71,16 @@ Guide the user to configure these in Vercel Settings > Environment Variables:
 |----------|-------------|---------|------------|
 | `AMPECO_BASE_DOMAIN` | Production tenant hostname (no https://) | `company.charge.ampeco.tech` | Must NOT include `https://` or trailing `/` |
 | `AMPECO_API_TOKEN` | Production API token from AMPECO | `sk_live_xxxx...` | Should start with `sk_live_` for production |
-| `NPM_TOKEN` | GitHub PAT with `read:packages` scope | `ghp_xxxx...` | Required for installing `@ampeco/ampeco-ui` |
 
 **Important checks:**
 - Set variables for **Production** environment (optionally Preview/Development)
 - `AMPECO_BASE_DOMAIN` is bare hostname only (e.g., `demo.charge.ampeco.tech` NOT `https://demo.charge.ampeco.tech/`)
 - Production API token should start with `sk_live_` (not `sk_test_`)
-- NPM_TOKEN needs `read:packages` scope at minimum
 
 **Common mistakes to detect:**
 - Including `https://` in AMPECO_BASE_DOMAIN
 - Including trailing slash in domain
 - Using test API token for production
-- Using wrong NPM token scope
-
 After setting variables, trigger a redeploy in Vercel.
 
 ---
@@ -183,7 +179,6 @@ Before considering deployment complete, verify:
 ```
 AMPECO_BASE_DOMAIN=company.charge.ampeco.tech
 AMPECO_API_TOKEN=sk_live_xxxxx
-NPM_TOKEN=ghp_xxxxx
 ```
 
 **Production URL Format:**

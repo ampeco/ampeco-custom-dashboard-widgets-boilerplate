@@ -79,7 +79,7 @@ sudo apt-get install build-essential
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `ERESOLVE unable to resolve dependency tree` | Peer dependency conflicts | Try `npm install --legacy-peer-deps` |
-| `ECONNREFUSED` | Can't reach npm.pkg.github.com | Check network/proxy/VPN |
+| `ECONNREFUSED` | Can't reach npm registry | Check network/proxy/VPN |
 
 ---
 

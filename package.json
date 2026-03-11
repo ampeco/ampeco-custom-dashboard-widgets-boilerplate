@@ -18,7 +18,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@ampeco/ampeco-ui": "^0.4.5",
+    "@ampeco/ampeco-ui": "^0.5.2",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.90.15",
     "date-fns": "^4.1.0",
