@@ -148,6 +148,8 @@ WIDGET_ORIGIN=https://widgets.example.com    # Origin of the "URL to embed" (htt
 
 `WIDGET_ORIGIN` is optional for backward compatibility: without it the pre-0.6.0 audience check is used and a warning is logged at startup. Always set it in new deployments.
 
+`TENANT_URL_SCHEME=http` is only for a tenant on a local development stack served without TLS. The default is `https`; never set it for a hosted tenant.
+
 ### Configuration Helper
 
 ```typescript

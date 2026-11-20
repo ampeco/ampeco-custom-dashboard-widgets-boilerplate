@@ -85,6 +85,8 @@ WIDGET_ORIGIN=https://your-widget.com
 - **Set (recommended):** a token is accepted only when its audience equals `WIDGET_ORIGIN`. A token issued for another widget is rejected with HTTP 401. There is no exemption for `localhost` or development mode.
 - **Not set:** the widget keeps the audience check of versions before 0.6.0, which takes the expected audience from the request and does not check it on `localhost` or in development mode. The server logs a warning at startup. Use this only to keep an existing deployment running until you add the setting.
 
+`TENANT_URL_SCHEME` is optional and defaults to `https`. Set it to `http` only when the tenant runs on a local development stack without TLS. The widget then reaches the tenant, checks the JWT issuer and accepts postMessage tokens over `http://{AMPECO_BASE_DOMAIN}`, and allows that origin to embed it. The server logs a warning at startup. Never use it against a hosted tenant: the signing keys and the API token would travel unencrypted.
+
 ### Token Delivery
 
 AMPECO gives the widget its JWT in one of two ways, chosen in the widget's settings under **Impersonation token delivery channel**. The template supports both without configuration.

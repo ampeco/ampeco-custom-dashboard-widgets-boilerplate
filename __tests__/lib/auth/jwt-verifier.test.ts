@@ -40,6 +40,7 @@ describe("JWT Verifier", () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     delete process.env.WIDGET_ORIGIN;
+    delete process.env.TENANT_URL_SCHEME;
     mockedJwtVerify.mockReset();
   });
 

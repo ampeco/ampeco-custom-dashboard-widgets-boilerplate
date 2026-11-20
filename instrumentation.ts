@@ -16,4 +16,11 @@ export function register() {
         "e.g. https://widgets.example.com"
     );
   }
+
+  if (process.env.TENANT_URL_SCHEME?.trim().toLowerCase() === "http") {
+    console.warn(
+      "TENANT_URL_SCHEME is http: the tenant's signing keys and the API token travel unencrypted. " +
+        "Use it only with a tenant on a local development stack"
+    );
+  }
 }

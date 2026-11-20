@@ -8,6 +8,7 @@ import {
   getAmpecoApiToken,
   getAmpecoTenantOrigin,
   getWidgetOrigin,
+  getTenantUrlScheme,
 } from "@/lib/config/ampeco";
 
 describe("Ampeco Config", () => {
@@ -16,6 +17,9 @@ describe("Ampeco Config", () => {
   beforeEach(() => {
     jest.resetModules();
     process.env = { ...originalEnv };
+    // Keep the tests independent of the developer's own .env
+    delete process.env.WIDGET_ORIGIN;
+    delete process.env.TENANT_URL_SCHEME;
   });
 
   afterAll(() => {
@@ -40,6 +44,22 @@ describe("Ampeco Config", () => {
       expect(config.urls.tenant).toBe("https://demo.charge.ampeco.tech");
       expect(config.jwt.algorithm).toBe("ES256");
       expect(config.jwt.clockTolerance).toBe(30);
+    });
+
+    it("should build http URLs when TENANT_URL_SCHEME is http", () => {
+      process.env.AMPECO_BASE_DOMAIN = "demo.charge.local.test";
+      process.env.AMPECO_API_TOKEN = "sk_test_token";
+      process.env.TENANT_URL_SCHEME = "http";
+
+      const config = getAmpecoConfig();
+
+      expect(config.urls.publicKey).toBe(
+        "http://demo.charge.local.test/.well-known/jwks.json"
+      );
+      expect(config.urls.apiBase).toBe(
+        "http://demo.charge.local.test/public-api/resources"
+      );
+      expect(config.urls.tenant).toBe("http://demo.charge.local.test");
     });
 
     it("should throw error if AMPECO_BASE_DOMAIN is missing", () => {
@@ -103,10 +123,32 @@ describe("Ampeco Config", () => {
     });
   });
 
+  describe("getTenantUrlScheme", () => {
+    it("should default to https", () => {
+      expect(getTenantUrlScheme()).toBe("https");
+    });
+
+    it("should accept http", () => {
+      process.env.TENANT_URL_SCHEME = "HTTP";
+      expect(getTenantUrlScheme()).toBe("http");
+    });
+
+    it("should throw on any other value", () => {
+      process.env.TENANT_URL_SCHEME = "ftp";
+      expect(() => getTenantUrlScheme()).toThrow("Invalid TENANT_URL_SCHEME");
+    });
+  });
+
   describe("getAmpecoTenantOrigin", () => {
     it("should return the tenant origin", () => {
       process.env.AMPECO_BASE_DOMAIN = "https://demo.charge.ampeco.tech";
       expect(getAmpecoTenantOrigin()).toBe("https://demo.charge.ampeco.tech");
+    });
+
+    it("should use http when TENANT_URL_SCHEME is http", () => {
+      process.env.AMPECO_BASE_DOMAIN = "demo.charge.local.test";
+      process.env.TENANT_URL_SCHEME = "http";
+      expect(getAmpecoTenantOrigin()).toBe("http://demo.charge.local.test");
     });
 
     it("should return empty string if the domain is not set", () => {

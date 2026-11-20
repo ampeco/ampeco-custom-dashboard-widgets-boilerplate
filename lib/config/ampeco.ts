@@ -75,6 +75,26 @@ export function getWidgetOrigin(): string | null {
 }
 
 /**
+ * Gets the scheme of the AMPECO tenant URL from TENANT_URL_SCHEME
+ *
+ * Defaults to https. http is only for a tenant on a local development stack:
+ * over http the tenant's signing keys and the API token travel unencrypted.
+ * @returns "https" or "http"
+ * @throws Error if TENANT_URL_SCHEME is set to anything else
+ */
+export function getTenantUrlScheme(): "https" | "http" {
+  const raw = process.env.TENANT_URL_SCHEME?.trim().toLowerCase();
+  if (!raw || raw === "https") {
+    return "https";
+  }
+  if (raw === "http") {
+    return "http";
+  }
+
+  throw new Error('Invalid TENANT_URL_SCHEME: expected "https" or "http"');
+}
+
+/**
  * Gets AMPECO configuration from environment variables
  * @returns AmpecoConfig object with URLs and settings
  */
@@ -84,15 +104,16 @@ export function getAmpecoConfig(): AmpecoConfig {
   const rawDomain = process.env.AMPECO_BASE_DOMAIN!;
   const baseDomain = normalizeDomain(rawDomain);
   const apiToken = process.env.AMPECO_API_TOKEN!;
+  const tenant = `${getTenantUrlScheme()}://${baseDomain}`;
 
   return {
     baseDomain,
     apiToken,
     widgetOrigin: getWidgetOrigin(),
     urls: {
-      publicKey: `https://${baseDomain}/.well-known/jwks.json`,
-      apiBase: `https://${baseDomain}/public-api/resources`,
-      tenant: `https://${baseDomain}`,
+      publicKey: `${tenant}/.well-known/jwks.json`,
+      apiBase: `${tenant}/public-api/resources`,
+      tenant,
     },
     jwt: {
       algorithm: "ES256",
@@ -114,7 +135,7 @@ export function getAmpecoBaseDomain(): string {
  */
 export function getAmpecoTenantOrigin(): string {
   const baseDomain = normalizeDomain(getAmpecoBaseDomain());
-  return baseDomain ? `https://${baseDomain}` : "";
+  return baseDomain ? `${getTenantUrlScheme()}://${baseDomain}` : "";
 }
 
 /**

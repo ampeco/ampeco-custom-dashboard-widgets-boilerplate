@@ -27,6 +27,7 @@ An existing deployment needs no change to keep working after this update. Adding
 
 - The tenant's signing keys are reused across requests for one hour instead of being set up again on every request. The API token is no longer sent to the tenant's public JWKS endpoint
 - Pages no longer check for the JWT on the server. `WidgetTokenProvider` in `app/layout.tsx` renders page content once the widget has a token
+- New optional setting `TENANT_URL_SCHEME` (default `https`). `http` lets the widget work with a tenant on a local development stack served without TLS
 - Removed the `node-cache` dependency
 - Integration guide, setup, deploy and create-widget skills updated for `WIDGET_ORIGIN` and both delivery channels
 
