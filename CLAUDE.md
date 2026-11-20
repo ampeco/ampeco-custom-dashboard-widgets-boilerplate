@@ -9,6 +9,7 @@ For detailed examples, data fetching patterns, layout patterns, API reference, a
 This is a **Next.js 16 template** for building custom widgets that embed in AMPECO's Laravel Nova backend via iframe. The template demonstrates:
 
 - JWT-based authentication with ES256 algorithm
+- Token delivery by postMessage or query parameter
 - API impersonation for automatic data filtering
 - Five example implementations (dashboard, listings, form, edit-charge-point, widget)
 - Security best practices (CSP, CORS, rate limiting)
@@ -29,19 +30,22 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 
 ### JWT Token Flow
 
-1. **Token Reception**: JWT token arrives via `?token=` query parameter when AMPECO loads the widget in iframe
-2. **Token Extraction**: Middleware (`middleware.ts`) extracts token from query param or Authorization header
+1. **Token Reception**: AMPECO delivers the JWT in one of two ways, set per widget in AMPECO:
+   - **postMessage** (recommended): the page loads without a token. `WidgetTokenProvider` (`lib/providers/widget-token-provider.tsx`) posts `ampeco:embed-card:impersonation-token:request` to the parent window and accepts the `ampeco:embed-card:impersonation-token` answer only from the tenant origin and the parent window. The token stays in memory (`lib/auth/token-store.ts`), never in the URL.
+   - **Query parameter**: the token arrives as `?token=` on the iframe URL and is preserved in navigation.
+2. **Token Extraction**: Middleware (`middleware.ts`) extracts token from Authorization header or query param. A request with a token is always validated. `/api/*` without a token returns 401. A page without a token is served without JWT context and holds no data.
 3. **Public Key Fetch**: Fetches public key from `https://{tenant}/.well-known/jwks.json`
-4. **Token Verification**: Verifies ES256 signature, validates issuer, audience, expiration
-5. **Context Storage**: Stores validated JWT payload in request headers for Server Components
-6. **API Impersonation**: When `impersonate: true`, API calls use format: `Bearer {api_token}:{jwt_token}`
+4. **Token Verification**: Verifies ES256 signature, validates issuer, audience (against `WIDGET_ORIGIN`), expiration
+5. **Context Storage**: Stores validated JWT payload in request headers for Server Components (only when the request carried a token)
+6. **Own API calls**: Client hooks send the token to `/api/*` in the `Authorization: Bearer {jwt}` header
+7. **API Impersonation**: When `impersonate: true`, API calls to AMPECO use format: `Bearer {api_token}:{jwt_token}`
 
 ### JWT Payload Structure
 
 ```typescript
 {
   iss: string;              // AMPECO tenant URL
-  aud: string | string[];   // Widget domain
+  aud: string | string[];   // Widget origin (scheme://host[:port] of the URL to embed)
   admin_id: number;          // Admin user ID
   app_id: number;           // Integration ID
   widget_id: number;        // Widget instance ID
@@ -58,7 +62,7 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 - **Endpoint**: `GET https://{tenant}/.well-known/jwks.json`
 - **Format**: JWKS (JSON Web Key Set)
 - **Algorithm**: ES256 (ECDSA P-256)
-- **Caching**: 1 hour (in-memory cache)
+- **Caching**: 1 hour (one `createRemoteJWKSet` reused across requests, `cacheMaxAge` 1 hour)
 - **Key ID**: Look for `kid: "1"` and `alg: "ES256"`
 
 ## Development Guidelines
@@ -81,6 +85,8 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 - Use HTTPS in production
 - Cache public keys (1 hour minimum)
 - Check `impersonate` flag before using JWT for API calls
+- Take the expected JWT audience from `WIDGET_ORIGIN`, never from request headers
+- Accept a postMessage token only when `event.origin` is the tenant origin and `event.source` is `window.parent`
 
 ❌ **NEVER:**
 
@@ -89,6 +95,8 @@ This is a **Next.js 16 template** for building custom widgets that embed in AMPE
 - Commit secrets to version control
 - Use deprecated `/api/v1/` endpoints (use `/public-api/resources/`)
 - Trust client-side data without server validation
+- Write a token received by postMessage to the URL
+- Add an exemption from the audience check for `localhost` or development mode
 
 ### Error Handling Patterns
 
@@ -135,7 +143,12 @@ const response = await fetch(url, {
 ```bash
 AMPECO_BASE_DOMAIN=demo.charge.ampeco.tech  # Without https://
 AMPECO_API_TOKEN=sk_live_xxxxx               # From Settings > API Tokens
+WIDGET_ORIGIN=https://widgets.example.com    # Origin of the "URL to embed" (http://localhost:3000 locally)
 ```
+
+`WIDGET_ORIGIN` is optional for backward compatibility: without it the pre-0.6.0 audience check is used and a warning is logged at startup. Always set it in new deployments.
+
+`TENANT_URL_SCHEME=http` is only for a tenant on a local development stack served without TLS. The default is `https`; never set it for a hosted tenant.
 
 ### Configuration Helper
 
@@ -143,7 +156,7 @@ AMPECO_API_TOKEN=sk_live_xxxxx               # From Settings > API Tokens
 import { getAmpecoConfig } from "@/lib/config/ampeco";
 
 const config = getAmpecoConfig();
-// Returns: { baseDomain, apiToken, urls: { publicKey, apiBase, tenant }, jwt: {...} }
+// Returns: { baseDomain, apiToken, widgetOrigin, urls: { publicKey, apiBase, tenant }, jwt: {...} }
 ```
 
 ### API Base URL
@@ -159,8 +172,9 @@ https://{AMPECO_BASE_DOMAIN}/public-api/resources/{resource}/{version}
 
 ### Data Fetching
 
-- **Server Components**: Use `getApiService()` from `lib/services/api.ts`
-- **Client Components**: Use TanStack Query hooks (`useGet`, `usePost`, `usePatch`, `usePut`, `useDelete`) from `lib/hooks`
+- **Client Components** (default): Use TanStack Query hooks (`useGet`, `usePost`, `usePatch`, `usePut`, `useDelete`) from `lib/hooks`. They work with both delivery channels
+- **Server Components**: `getApiService()` from `lib/services/api.ts` has the JWT during page render only with query parameter delivery. With postMessage the page is requested without a token, so do not fetch impersonated data while rendering a page
+- **Pages**: A page that only renders Client Components needs no `getJwtContext()` gate: `WidgetTokenProvider` in `app/layout.tsx` renders page content only once the widget has a token. A Server Component that renders data itself MUST check `getJwtContext()` first, because pages are served without a token. `getApiService()` throws without a validated JWT
 - **No Server Actions**: All form submissions use TanStack Query mutations
 
 ## Common Pitfalls

@@ -2,7 +2,17 @@
  * Shared utilities for AMPECO hooks
  */
 
+import { getWidgetToken } from "@/lib/auth/token-store";
 import { preserveToken } from "@/lib/utils/preserve-token";
+
+/**
+ * Builds the Authorization header for requests to the widget's own /api routes
+ * @returns Headers with the JWT token, or empty object if there is no token
+ */
+export function getAuthHeaders(): Record<string, string> {
+  const token = getWidgetToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 /**
  * Extracts JWT token from current page URL

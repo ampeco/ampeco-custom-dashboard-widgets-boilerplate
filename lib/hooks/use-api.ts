@@ -12,7 +12,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
-import { appendTokenToUrl } from "./utils";
+import { getAuthHeaders } from "./utils";
 
 /**
  * Generic query key factory for any API endpoint
@@ -52,12 +52,11 @@ export function useGet<T = unknown>(
         });
       }
 
-      let url = `${endpoint}${
+      const url = `${endpoint}${
         searchParams.toString() ? `?${searchParams.toString()}` : ""
       }`;
-      url = appendTokenToUrl(url);
 
-      const response = await fetch(url);
+      const response = await fetch(url, { headers: getAuthHeaders() });
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.statusText}`);
       }
@@ -90,12 +89,11 @@ export function usePost<TData = unknown, TVariables = unknown>(
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (data) => {
-      const url = appendTokenToUrl(endpoint);
-
-      const response = await fetch(url, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         body: JSON.stringify(data),
       });
@@ -149,12 +147,11 @@ export function usePatch<TData = unknown, TVariables = unknown>(
         body = variables;
       }
 
-      url = appendTokenToUrl(url);
-
       const response = await fetch(url, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         body: JSON.stringify(body),
       });
@@ -207,12 +204,11 @@ export function usePut<TData = unknown, TVariables = unknown>(
         body = variables;
       }
 
-      url = appendTokenToUrl(url);
-
       const response = await fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         body: JSON.stringify(body),
       });
@@ -247,10 +243,9 @@ export function useDelete<TData = void, TVariables = string>(
 ) {
   return useMutation<TData, Error, TVariables>({
     mutationFn: async (id) => {
-      const url = appendTokenToUrl(`${endpoint}/${id}`);
-
-      const response = await fetch(url, {
+      const response = await fetch(`${endpoint}/${id}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
       if (!response.ok) {
         throw new Error(`Failed to delete: ${response.statusText}`);

@@ -19,5 +19,5 @@
 export { useGet, usePost, usePatch, usePut, useDelete } from "./use-api";
 
 // Utilities
-export { getTokenFromUrl, appendTokenToUrl } from "./utils";
+export { getTokenFromUrl, appendTokenToUrl, getAuthHeaders } from "./utils";
 

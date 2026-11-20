@@ -40,7 +40,7 @@ If the user is deploying for the first time or wants to use the deploy button:
 
 **Deploy Button URL structure:**
 ```
-https://vercel.com/new/clone?repository-url=https://github.com/{username}/{repo}&env=AMPECO_BASE_DOMAIN,AMPECO_API_TOKEN
+https://vercel.com/new/clone?repository-url=https://github.com/{username}/{repo}&env=AMPECO_BASE_DOMAIN,AMPECO_API_TOKEN,WIDGET_ORIGIN
 ```
 
 #### Option B: Manual Vercel Setup (Existing Project)
@@ -71,16 +71,19 @@ Guide the user to configure these in Vercel Settings > Environment Variables:
 |----------|-------------|---------|------------|
 | `AMPECO_BASE_DOMAIN` | Production tenant hostname (no https://) | `company.charge.ampeco.tech` | Must NOT include `https://` or trailing `/` |
 | `AMPECO_API_TOKEN` | Production API token from AMPECO | `sk_live_xxxx...` | Should start with `sk_live_` for production |
+| `WIDGET_ORIGIN` | Public origin of the deployed widget | `https://my-widget.vercel.app` | Scheme and host only, no path. Must equal the origin of "URL to embed" |
 
 **Important checks:**
 - Set variables for **Production** environment (optionally Preview/Development)
 - `AMPECO_BASE_DOMAIN` is bare hostname only (e.g., `demo.charge.ampeco.tech` NOT `https://demo.charge.ampeco.tech/`)
 - Production API token should start with `sk_live_` (not `sk_test_`)
+- `WIDGET_ORIGIN` is the production origin, not the `http://localhost:3000` used during development. Without it the JWT audience check is not strict
 
 **Common mistakes to detect:**
 - Including `https://` in AMPECO_BASE_DOMAIN
 - Including trailing slash in domain
 - Using test API token for production
+- Leaving `WIDGET_ORIGIN` at the localhost value, or setting it to a domain other than the one in "URL to embed" (every request then fails with 401)
 After setting variables, trigger a redeploy in Vercel.
 
 ---
@@ -100,7 +103,7 @@ After deployment completes, the user needs to register or update the widget in A
 **If updating existing widget (was localhost):**
 1. Find the widget used during development
 2. Edit it
-3. Update "URL to embed" from localhost to production HTTPS URL
+3. Update "URL to embed" from localhost to production HTTPS URL (its origin must equal `WIDGET_ORIGIN` in Vercel)
 4. Ensure "Enable admin user impersonation" is checked
 5. Save changes
 
@@ -179,6 +182,7 @@ Before considering deployment complete, verify:
 ```
 AMPECO_BASE_DOMAIN=company.charge.ampeco.tech
 AMPECO_API_TOKEN=sk_live_xxxxx
+WIDGET_ORIGIN=https://{your-vercel-domain}
 ```
 
 **Production URL Format:**

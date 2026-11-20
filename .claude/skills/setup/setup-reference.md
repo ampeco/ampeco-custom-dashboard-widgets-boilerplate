@@ -97,14 +97,15 @@ If the browser console shows CSP errors when loading the widget iframe:
 If you see CORS errors in the browser console:
 - The Next.js dev server should allow cross-origin requests from the AMPECO tenant
 - Check that the `middleware.ts` is not blocking requests
-- Verify the `Origin` header matches what the AMPECO tenant sends
 
 ### JWT Audience Mismatch
 
-The JWT token's `aud` (audience) claim must match the widget's URL. Common mismatches:
-- Widget registered with `http://localhost:3000` but JWT audience is `https://localhost:3000`
-- Widget registered with `http://localhost:3000` but JWT audience is `http://localhost:3001`
-- Trailing path differences
+The JWT token's `aud` (audience) claim is the origin (scheme, host and port) of the widget's **URL to embed**. It must equal `WIDGET_ORIGIN` in `.env`. `localhost` is not exempt. Common mismatches:
+- Widget registered with `http://localhost:3000/...` but `WIDGET_ORIGIN` is `https://localhost:3000`
+- Widget registered with `http://localhost:3001/...` but `WIDGET_ORIGIN` is `http://localhost:3000`
+- A token copied from another widget: its audience is that widget's origin
+
+If `WIDGET_ORIGIN` is not set, the server logs a warning at startup and uses the audience check of versions before 0.6.0, which is not strict.
 
 ### Sandbox Attributes
 

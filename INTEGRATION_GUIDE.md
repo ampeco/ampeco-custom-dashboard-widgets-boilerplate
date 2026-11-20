@@ -44,6 +44,7 @@ Before integrating your widget, ensure you have:
    | **Height**                          | Fixed height in pixels or "auto" | Fixed height in pixels or auto     |
    | **Sandbox options**                 | See below                        | iframe sandbox attributes          |
    | **Enable admin user impersonation** | ✅ Enabled                       | Allow JWT for API calls            |
+   | **Impersonation token delivery channel** | postMessage (recommended)   | How the JWT reaches the widget, see [Token Delivery](#token-delivery) |
 
 ### Step 2: Configure Sandbox Options
 
@@ -61,6 +62,8 @@ The sandbox attribute for the iframe. If nothing is selected the iframe will not
 - Allows the iframe content to navigate its top-level browsing context
 - Allows the iframe content to navigate its top-level browsing context, but only if initiated by user
 
+If you select any sandbox option and use postMessage delivery, **Allow Same Origin** ("Allows the iframe content to be treated as being from the same origin") must be selected. Without it the iframe has no origin and cannot receive the token.
+
 ### Step 3: Enable Impersonation
 
 **Important:** Enable "Admin user impersonation" to allow your widget to make API calls with the admin user's permissions.
@@ -74,7 +77,35 @@ Set the following in your deployment platform:
 ```bash
 AMPECO_BASE_DOMAIN=demo.charge.ampeco.tech
 AMPECO_API_TOKEN=sk_live_your_token_here
+WIDGET_ORIGIN=https://your-widget.com
 ```
+
+`WIDGET_ORIGIN` is the widget's own public origin: the scheme, host and port of the **URL to embed**, without a path. AMPECO puts this origin in the `aud` (audience) claim of every JWT it issues for the widget.
+
+- **Set (recommended):** a token is accepted only when its audience equals `WIDGET_ORIGIN`. A token issued for another widget is rejected with HTTP 401. There is no exemption for `localhost` or development mode.
+- **Not set:** the widget keeps the audience check of versions before 0.6.0, which takes the expected audience from the request and does not check it on `localhost` or in development mode. The server logs a warning at startup. Use this only to keep an existing deployment running until you add the setting.
+
+`TENANT_URL_SCHEME` is optional and defaults to `https`. Set it to `http` only when the tenant runs on a local development stack without TLS. The widget then reaches the tenant, checks the JWT issuer and accepts postMessage tokens over `http://{AMPECO_BASE_DOMAIN}`, and allows that origin to embed it. The server logs a warning at startup. Never use it against a hosted tenant: the signing keys and the API token would travel unencrypted.
+
+### Token Delivery
+
+AMPECO gives the widget its JWT in one of two ways, chosen in the widget's settings under **Impersonation token delivery channel**. The template supports both without configuration.
+
+**postMessage (recommended)** keeps the token out of the URL, and so out of server logs, browser history and referrer headers:
+
+1. AMPECO loads the widget page without a token. The page is served without authentication and holds no data.
+2. The widget posts `ampeco:embed-card:impersonation-token:request` to the parent window, addressed to the tenant origin (`https://{AMPECO_BASE_DOMAIN}`).
+3. AMPECO answers with `{ type: "ampeco:embed-card:impersonation-token", token }`. The widget accepts the message only from the tenant origin and from the parent window.
+4. The widget keeps the token in memory and sends it to its own `/api` routes in the `Authorization: Bearer {jwt}` header.
+5. If no token arrives within 3 seconds, the widget shows "JWT token is required. Please ensure the widget is loaded from AMPECO backend."
+
+**Query parameter** appends the token to the iframe URL as `?token={jwt}`. The middleware validates the token when the page is requested, and links between pages keep it in the URL. Requests to the widget's own `/api` routes carry it in the `Authorization` header.
+
+This is implemented in `lib/providers/widget-token-provider.tsx` (browser) and `middleware.ts` (server). Every request to `/api/*` requires a valid token in both channels.
+
+Because a page can be requested by anyone without a token, a Server Component must not render data unless `getJwtContext()` returns a context. `getApiService()` enforces this itself: it throws when the request has no validated JWT. Data from any other source needs your own check.
+
+The token is valid for 12 hours. AMPECO does not issue a new one while the page stays open, so a widget left open longer stops loading data until the admin reloads the page.
 
 ### CORS Configuration
 
@@ -153,6 +184,7 @@ ampeco-custom-widget-template/
 
    - `AMPECO_BASE_DOMAIN` - Your AMPECO tenant domain (e.g., `demo.charge.ampeco.tech`)
    - `AMPECO_API_TOKEN` - Your AMPECO API token (from Settings > API Tokens)
+   - `WIDGET_ORIGIN` - `http://localhost:3000` (the origin of the **URL to embed** you register for local development)
    - `NODE_ENV` - development
 
 4. **Start development server**
@@ -161,22 +193,23 @@ ampeco-custom-widget-template/
    npm run dev
    ```
 
-5. **Access the application with JWT token**
-   - Obtain JWT token from browser dev tools when viewing an existing custom widget in AMPECO
-   - Access your local widget: `http://localhost:3000/dashboard?token={jwt}` (or any route like `/listings`, `/form`, etc.)
-   - The token is automatically passed through to all API routes
-   - Once the token is set, it'll be automatically preserved in all navigation and API requests
+5. **Open the widget from AMPECO**
+   - Create a custom widget on your tenant with **URL to embed** `http://localhost:3000/dashboard` (or any route like `/listings`, `/form`, etc.)
+   - Open the dashboard in AMPECO that shows the widget. AMPECO issues a JWT whose audience is `http://localhost:3000` and delivers it to the widget
+   - `localhost` is not exempt from the audience check: a token copied from a widget with a different URL is rejected when `WIDGET_ORIGIN` is set
 
 ### Adding New Features
 
 1. **New Route**: Create `app/your-route/page.tsx`
-2. **New API Integration**: Use `getApiService()` from `lib/services/api.ts` for server-side data fetching
+2. **New API Integration**: Call your `/api/...` route from a Client Component with the TanStack Query hooks. `getApiService()` from `lib/services/api.ts` runs on the server behind those routes
 3. **New Component**: Add to `components/` directory
 4. **Client Component with Data Fetching**: Use TanStack Query hooks (`useGet`, `usePost`, etc.) from `lib/hooks`
 
 ### Data Fetching Patterns
 
-**Server Components** (Initial Data Fetching):
+**Server Components** (query parameter delivery only):
+
+A page has the JWT while it renders on the server only when the token is in the URL. With postMessage delivery the page is requested without a token, so `getApiService()` in a Server Component has no admin to impersonate. Fetch data in Client Components unless the widget will only ever use query parameter delivery.
 
 ```typescript
 import { getApiService } from "@/lib/services/api";
@@ -195,7 +228,7 @@ export default async function Page() {
 }
 ```
 
-**Client Components** (Real-time Updates with TanStack Query):
+**Client Components** (recommended, works with both delivery channels):
 
 ```typescript
 "use client";
@@ -222,17 +255,14 @@ Before deploying, test your widget locally:
 
 1. **Start your development server** (see [Local Development Setup](#local-development-setup))
 
-2. **Get a JWT token**:
+2. **Register the local widget in AMPECO**:
 
-   - Open an existing custom widget in AMPECO backend
-   - Open browser DevTools (F12 or Cmd+Option+I)
-   - Go to Network tab
-   - Find a request to your widget URL
-   - Copy the `token` query parameter value from the URL
+   - Create a custom widget with **URL to embed** `http://localhost:3000/dashboard` (or any route)
+   - Set `WIDGET_ORIGIN=http://localhost:3000` in `.env`
 
-3. **Access your local widget**:
+3. **Open the widget from AMPECO**:
 
-   - Open `http://localhost:3000/dashboard?token={jwt}` (or any route)
+   - Open the AMPECO dashboard that shows the widget
    - Verify the widget loads without errors
    - Check browser console for any warnings or errors
 
@@ -245,10 +275,10 @@ Before deploying, test your widget locally:
 
 ### Testing JWT Validation
 
-1. **Verify JWT token in URL**:
+1. **Verify token delivery**:
 
-   - Widget should load with JWT token in query parameter: `?token={jwt}`
-   - Token should be automatically preserved in navigation
+   - postMessage: the iframe URL has no `token` parameter, and requests to `/api/` carry an `Authorization: Bearer {jwt}` header
+   - Query parameter: the iframe URL has `?token={jwt}`, and the token is preserved in navigation
 
 2. **Check JWT payload** (using browser DevTools):
 
@@ -260,7 +290,7 @@ Before deploying, test your widget locally:
      - `widget_id` - Widget instance ID
      - `impersonate: true` - Required for API calls
      - `iss` - Should match your AMPECO tenant domain
-     - `aud` - Should include your widget domain
+     - `aud` - Should include your widget origin (the value of `WIDGET_ORIGIN`)
      - `exp` - Expiration timestamp (tokens expire after 12 hours)
 
 3. **Verify JWT validation**:
@@ -311,9 +341,10 @@ Before deploying, test your widget locally:
 
 1. **Missing JWT token**:
 
-   - Access widget without `?token=` parameter
-   - Should show authentication error message
+   - Open the widget URL directly in a browser tab, without `?token=`
+   - Should show "JWT token is required. Please ensure the widget is loaded from AMPECO backend."
    - Should not make API calls
+   - A request to `/api/...` without a token should return HTTP 401
 
 2. **Invalid JWT token**:
 
@@ -627,7 +658,7 @@ In development mode, React Query DevTools appear automatically:
 **Important**: TanStack Query hooks only work in Client Components.
 
 - ✅ **Client Components**: Use `useQuery`, `useMutation` hooks
-- ✅ **Server Components**: Use direct API calls with `getApiService()`
+- ✅ **Server Components**: Use direct API calls with `getApiService()`, only with query parameter delivery (see [Token Delivery](#token-delivery))
 
 Example pattern:
 
@@ -1092,7 +1123,8 @@ For full API reference, see: <https://developers.ampeco.com/>
 
 - Verify signature using public key
 - Check issuer matches AMPECO tenant
-- Validate audience includes your domain
+- Set `WIDGET_ORIGIN` so that the audience is checked against configuration, never against request headers
+- Accept a token by postMessage only when `event.origin` is the tenant origin and `event.source` is the parent window
 - Check expiration with clock tolerance
 
 ❌ **Never skip validation for "testing"**
@@ -1203,7 +1235,7 @@ export function Dashboard() {
 **Solutions:**
 
 1. Check browser console for errors
-2. Verify JWT token is present in URL
+2. Verify the widget receives the JWT token: in the URL with query parameter delivery, or by postMessage (with sandbox options set, **Allow Same Origin** must be selected)
 3. Check CSP headers allow AMPECO domains
 4. Verify widget URL is accessible from AMPECO backend
 5. Check that "Admin user impersonation" is enabled in AMPECO
@@ -1217,7 +1249,7 @@ export function Dashboard() {
 
 1. Check that `AMPECO_BASE_DOMAIN` is correct
 2. Verify API token is valid
-3. Ensure widget URL in AMPECO matches your deployment URL
+3. Ensure `WIDGET_ORIGIN` equals the origin of the **URL to embed** in AMPECO (same scheme, host and port)
 4. Check that "Admin user impersonation" is enabled in AMPECO
 5. Check public key endpoint is accessible
 6. Verify JWT token format is correct

@@ -1,5 +1,36 @@
 # AMPECO Custom Dashboard Widgets Boilerplate
 
+## 0.6.0 (security fix)
+
+An existing deployment needs no change to keep working after this update. Adding `WIDGET_ORIGIN` is recommended.
+
+### Security
+
+- **Audience validation from configuration**: new optional setting `WIDGET_ORIGIN`, the widget's own public origin (scheme, host and port of the **URL to embed**)
+  - When set, a JWT is accepted only if its audience equals `WIDGET_ORIGIN`. The `Origin` request header is not used, and `localhost`, `127.0.0.1` and development mode are not exempt
+  - When not set, the audience check of earlier versions is kept and the server logs a warning at startup. In that mode a token issued for another widget on the same tenant can be accepted, so set `WIDGET_ORIGIN`
+  - For local development set `WIDGET_ORIGIN=http://localhost:3000` and register the widget with a `http://localhost:3000/...` URL
+- **Token delivery by postMessage**: the widget now accepts the JWT through the AMPECO delivery channel **postMessage**, which keeps the token out of the URL. Query parameter delivery keeps working
+  - A page opened without a token asks the parent window for it and accepts it only from the tenant origin and the parent window
+  - A page opened without a token is served without authentication and holds no data. It shows "JWT token is required..." after 3 seconds without a token, instead of an HTTP 401 response
+  - Every request to `/api/*` still requires a valid token
+- Requests from the hooks in `lib/hooks` to `/api/*` carry the token in the `Authorization` header instead of the URL, in both delivery channels. `appendTokenToUrl` and `preserveToken` are unchanged
+- JWT context headers (`x-ampeco-*`) sent by a caller are removed from page requests without a token
+- `getApiService().request()` now throws when the request has no validated JWT, instead of calling AMPECO with the API token alone. A page can be requested without a token, so a Server Component that fetches data must not return unfiltered data to an anonymous caller
+- A request to `/api/*` whose path ends in a static file extension (for example `.js`) no longer skips JWT validation
+
+### Check when updating a fork
+
+- A Server Component of yours that renders data from another source than `getApiService()` (your own database, another API) was protected by the middleware rejecting every page request without a token. Pages are now served without a token. Keep or add a `getJwtContext()` check in such a component, as the example pages had before this version
+
+### Changed
+
+- The tenant's signing keys are reused across requests for one hour instead of being set up again on every request. The API token is no longer sent to the tenant's public JWKS endpoint
+- Pages no longer check for the JWT on the server. `WidgetTokenProvider` in `app/layout.tsx` renders page content once the widget has a token
+- New optional setting `TENANT_URL_SCHEME` (default `https`). `http` lets the widget work with a tenant on a local development stack served without TLS
+- Removed the `node-cache` dependency
+- Integration guide, setup, deploy and create-widget skills updated for `WIDGET_ORIGIN` and both delivery channels
+
 ## 0.5.1 (feat/changed-jwt-payload)
 
 - Updated JWT payload to include `admin_id` instead of `user_id`

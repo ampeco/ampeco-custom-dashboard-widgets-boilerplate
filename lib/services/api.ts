@@ -100,6 +100,15 @@ export class ApiService {
     // Get JWT token if not provided (from context)
     const token = jwtToken || (await getJwtToken());
 
+    // Without a validated JWT there is no admin to act for. Pages can be
+    // requested without a token (postMessage delivery), so never fall back to
+    // the API token alone: that would return unfiltered data to anyone.
+    if (!token) {
+      throw new Error(
+        "Authentication required: this request has no validated JWT token"
+      );
+    }
+
     // Build URL
     const url = this.buildUrl(endpoint, params);
 
