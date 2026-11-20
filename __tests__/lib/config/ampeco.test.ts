@@ -2,7 +2,13 @@
  * Tests for AMPECO configuration helper
  */
 
-import { getAmpecoConfig, getAmpecoBaseDomain, getAmpecoApiToken } from "@/lib/config/ampeco";
+import {
+  getAmpecoConfig,
+  getAmpecoBaseDomain,
+  getAmpecoApiToken,
+  getAmpecoTenantOrigin,
+  getWidgetOrigin,
+} from "@/lib/config/ampeco";
 
 describe("Ampeco Config", () => {
   const originalEnv = process.env;
@@ -74,5 +80,38 @@ describe("Ampeco Config", () => {
       expect(getAmpecoApiToken()).toBe("");
     });
   });
-});
 
+  describe("getWidgetOrigin", () => {
+    it("should return null if WIDGET_ORIGIN is not set", () => {
+      delete process.env.WIDGET_ORIGIN;
+      expect(getWidgetOrigin()).toBeNull();
+    });
+
+    it("should return the origin as configured", () => {
+      process.env.WIDGET_ORIGIN = "https://widgets.example.com";
+      expect(getWidgetOrigin()).toBe("https://widgets.example.com");
+    });
+
+    it("should reduce a URL with a path to its origin", () => {
+      process.env.WIDGET_ORIGIN = "http://localhost:3000/dashboard/";
+      expect(getWidgetOrigin()).toBe("http://localhost:3000");
+    });
+
+    it("should throw if WIDGET_ORIGIN is not a valid URL", () => {
+      process.env.WIDGET_ORIGIN = "widgets.example.com";
+      expect(() => getWidgetOrigin()).toThrow("Invalid WIDGET_ORIGIN");
+    });
+  });
+
+  describe("getAmpecoTenantOrigin", () => {
+    it("should return the tenant origin", () => {
+      process.env.AMPECO_BASE_DOMAIN = "https://demo.charge.ampeco.tech";
+      expect(getAmpecoTenantOrigin()).toBe("https://demo.charge.ampeco.tech");
+    });
+
+    it("should return empty string if the domain is not set", () => {
+      delete process.env.AMPECO_BASE_DOMAIN;
+      expect(getAmpecoTenantOrigin()).toBe("");
+    });
+  });
+});

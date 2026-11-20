@@ -23,6 +23,11 @@ if [ -f ".env" ]; then
     else
         echo "env_AMPECO_API_TOKEN=not_set"
     fi
+    if grep -q "^WIDGET_ORIGIN=." .env 2>/dev/null; then
+        echo "env_WIDGET_ORIGIN=set"
+    else
+        echo "env_WIDGET_ORIGIN=not_set"
+    fi
 else
     echo "env_file=not_found"
 fi

@@ -78,7 +78,7 @@ Use the templates below, customizing:
 
 After generating files:
 1. Run `npm run dev` to verify no build errors
-2. Check that the new route is accessible at `http://localhost:3000/{route-name}?token=...`
+2. Check that the new route loads when the widget is opened from AMPECO with **URL to embed** `http://localhost:3000/{route-name}` (opened directly in a browser tab it shows "JWT token is required", which is expected)
 3. Confirm imports resolve correctly
 
 ### Step 5: Registration Guidance
@@ -99,6 +99,8 @@ Explain to the user how to register their widget in AMPECO:
 
 ## Templates
 
+Pages do not check for the JWT themselves. `WidgetTokenProvider` in `app/layout.tsx` renders a page's content only once the widget has a token (from the URL or by postMessage), and shows the "JWT token is required" message otherwise. Fetch data in Client Components with the hooks from `@/lib/hooks`: with postMessage delivery a page has no token while it renders on the server.
+
 ### Dashboard Template
 
 **Server Component: `app/{name}/page.tsx`**
@@ -110,10 +112,8 @@ Explain to the user how to register their widget in AMPECO:
  * {Description of what this dashboard displays}
  */
 
-import { getJwtContext } from "@/lib/auth/get-jwt-context";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { {Name}Client } from "./components/{Name}Client";
-import { Message } from "@ampeco/ampeco-ui";
 
 interface {Name}PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -123,16 +123,6 @@ export default async function {Name}Page({
   searchParams,
 }: {Name}PageProps) {
   const params = await searchParams;
-  const jwtContext = await getJwtContext();
-
-  if (!jwtContext) {
-    return (
-      <DashboardLayout searchParams={params}>
-        <Message text="Authentication error. Please ensure the widget is loaded from AMPECO backend." />
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout searchParams={params}>
       <{Name}Client />
@@ -219,9 +209,7 @@ export function {Name}Client() {
  */
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { getJwtContext } from "@/lib/auth/get-jwt-context";
 import { {Name}Client } from "./components/{Name}Client";
-import { Message } from "@ampeco/ampeco-ui";
 
 interface {Name}PageProps {
   searchParams: Promise<{
@@ -234,16 +222,6 @@ export default async function {Name}Page({
   searchParams,
 }: {Name}PageProps) {
   const params = await searchParams;
-  const jwtContext = await getJwtContext();
-
-  if (!jwtContext) {
-    return (
-      <DashboardLayout searchParams={params}>
-        <Message text="Authentication error. Please ensure the widget is loaded from AMPECO backend." />
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout searchParams={params}>
       <{Name}Client />
@@ -355,8 +333,6 @@ export function {Name}Client() {
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { {Name}Form } from "./components/{Name}Form";
-import { getJwtContext } from "@/lib/auth/get-jwt-context";
-import { Message } from "@ampeco/ampeco-ui";
 
 interface {Name}PageProps {
   searchParams: Promise<{
@@ -368,16 +344,6 @@ interface {Name}PageProps {
 
 export default async function {Name}Page({ searchParams }: {Name}PageProps) {
   const params = await searchParams;
-  const jwtContext = await getJwtContext();
-
-  if (!jwtContext) {
-    return (
-      <DashboardLayout searchParams={params}>
-        <Message text="Authentication error. Please ensure the widget is loaded from AMPECO backend." />
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout searchParams={params}>
       <{Name}Form />

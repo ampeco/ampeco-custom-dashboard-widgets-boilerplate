@@ -6,7 +6,6 @@
  */
 
 import { jwtVerify, createRemoteJWKSet, JWTPayload } from "jose";
-import NodeCache from "node-cache";
 import { getAmpecoConfig } from "@/lib/config/ampeco";
 
 /**
@@ -14,7 +13,7 @@ import { getAmpecoConfig } from "@/lib/config/ampeco";
  */
 export interface AmpecoJwtPayload extends JWTPayload {
   iss: string; // Issuer (AMPECO tenant URL)
-  aud: string | string[]; // Audience (widget domain)
+  aud: string | string[]; // Audience (widget origin)
   admin_id: number;
   app_id: number;
   widget_id: number;
@@ -25,101 +24,64 @@ export interface AmpecoJwtPayload extends JWTPayload {
 }
 
 /**
- * Cache for public keys (1 hour TTL)
+ * How long the tenant's signing keys are reused before they are fetched again (1 hour)
  */
-const publicKeyCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+const JWKS_CACHE_MAX_AGE_MS = 60 * 60 * 1000;
+
+type RemoteKeySet = ReturnType<typeof createRemoteJWKSet>;
 
 /**
- * Fetches public key from AMPECO API
- * @param publicKeyUrl URL to fetch public key from
- * @returns JWKS endpoint URL for jose library
+ * Key set reused across requests. jose fetches the keys on first use, keeps
+ * them for JWKS_CACHE_MAX_AGE_MS and fetches again when a token is signed with
+ * a key it does not know yet (key rotation).
  */
-async function getPublicKeyUrl(
-  publicKeyUrl: string,
-  apiToken: string
-): Promise<string> {
-  // Check cache first
-  const cached = publicKeyCache.get<string>(publicKeyUrl);
-  if (cached) {
-    return cached;
+let cachedKeySet: { url: string; keySet: RemoteKeySet } | null = null;
+
+/**
+ * Gets the tenant's signing keys
+ * @param publicKeyUrl JWKS endpoint URL
+ * @returns Key set for jose's jwtVerify
+ */
+function getTenantKeySet(publicKeyUrl: string): RemoteKeySet {
+  if (cachedKeySet?.url !== publicKeyUrl) {
+    cachedKeySet = {
+      url: publicKeyUrl,
+      keySet: createRemoteJWKSet(new URL(publicKeyUrl), {
+        cacheMaxAge: JWKS_CACHE_MAX_AGE_MS,
+      }),
+    };
   }
 
-  // Fetch from API to validate it exists
-  try {
-    const response = await fetch(publicKeyUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        // Note: .well-known/jwks.json is typically public, but keeping auth for compatibility
-        ...(apiToken && { Authorization: `Bearer ${apiToken}` }),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch public key: ${response.status} ${response.statusText}`
-      );
-    }
-
-    const jwks = await response.json();
-
-    // Validate JWKS format
-    if (!jwks.keys || !Array.isArray(jwks.keys)) {
-      throw new Error("Invalid JWKS format: missing keys array");
-    }
-
-    // Define a type for JWK to avoid 'any'
-    type JWK = { kid?: string; alg?: string; kty?: string };
-
-    // Validate at least one ES256 key exists
-    // Note: jose library will automatically select the correct key based on kid from JWT token
-    const hasEs256Key = jwks.keys.some(
-      (k: JWK) => k.alg === "ES256" || k.kty === "EC"
-    );
-
-    if (!hasEs256Key) {
-      throw new Error("No ES256 key found in JWKS");
-    }
-
-    // Cache the URL (jose library will handle key selection internally)
-    publicKeyCache.set(publicKeyUrl, publicKeyUrl);
-
-    return publicKeyUrl;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Public key fetch failed: ${error.message}`);
-    }
-    throw error;
-  }
+  return cachedKeySet.keySet;
 }
 
 /**
  * Verifies JWT token and extracts payload
+ *
+ * The audience is checked against WIDGET_ORIGIN when it is set. When it is not
+ * set, the legacy check against legacyExpectedAudience is used, so deployments
+ * made before WIDGET_ORIGIN existed keep working.
  * @param token JWT token string
- * @param expectedAudience Expected audience (widget domain)
+ * @param legacyExpectedAudience Expected audience for the legacy check (ignored when WIDGET_ORIGIN is set)
  * @returns Decoded JWT payload
  * @throws Error if token is invalid, expired, or verification fails
  */
 export async function verifyJwt(
   token: string,
-  expectedAudience?: string
+  legacyExpectedAudience?: string
 ): Promise<AmpecoJwtPayload> {
   const config = getAmpecoConfig();
-  const publicKeyUrl = await getPublicKeyUrl(
-    config.urls.publicKey,
-    config.apiToken
-  );
-
-  // Create remote JWK set (jose handles caching)
-  const JWKS = createRemoteJWKSet(new URL(publicKeyUrl));
+  const JWKS = getTenantKeySet(config.urls.publicKey);
+  const expectedAudience = config.widgetOrigin
+    ? undefined
+    : legacyExpectedAudience;
 
   try {
-    // Verify token - don't validate audience in jwtVerify, we'll do it manually
-    // This allows us to see the actual audience value even if it doesn't match
+    // Verify token. With WIDGET_ORIGIN set, jose rejects any other audience.
     const { payload } = await jwtVerify(token, JWKS, {
       algorithms: [config.jwt.algorithm],
       issuer: config.urls.tenant,
-      // Don't pass audience here - validate manually after to get better error messages
+      ...(config.widgetOrigin && { audience: config.widgetOrigin }),
       clockTolerance: config.jwt.clockTolerance,
     });
 
@@ -144,9 +106,8 @@ export async function verifyJwt(
       );
     }
 
-    // Validate audience if provided
-    // Note: In development (localhost), we allow any audience to support local testing
-    // In production, audience must match exactly
+    // Legacy audience check, used only when WIDGET_ORIGIN is not set
+    // Note: In development (localhost), it allows any audience
     if (expectedAudience) {
       const audiences = Array.isArray(ampecoPayload.aud)
         ? ampecoPayload.aud
@@ -186,24 +147,18 @@ export async function verifyJwt(
 
 /**
  * Extracts JWT token from request
- * Supports both query parameter (?token=) and Authorization header
+ * Supports both Authorization header and query parameter (?token=)
  * @param request Next.js request object
  * @returns JWT token string or null
  */
 export function extractJwtToken(request: Request): string | null {
-  // Try query parameter first (primary method for iframe embedding)
-  const url = new URL(request.url);
-  const tokenFromQuery = url.searchParams.get("token");
-
-  if (tokenFromQuery) {
-    return tokenFromQuery;
-  }
-
-  // Try Authorization header
+  // Try Authorization header first (used by the widget's own data requests)
   const authHeader = request.headers.get("authorization");
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.substring(7);
   }
 
-  return null;
+  // Try query parameter (query parameter delivery from AMPECO)
+  const url = new URL(request.url);
+  return url.searchParams.get("token") || null;
 }

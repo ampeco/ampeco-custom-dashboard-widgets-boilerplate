@@ -57,6 +57,10 @@ This project deploys with Vercel's GitHub integration. Configure it as follows:
 - `AMPECO_BASE_DOMAIN` – your AMPECO tenant domain (e.g., `demo.charge.ampeco.tech`)
 - `AMPECO_API_TOKEN` – AMPECO API token
 
+### Recommended environment variables
+
+- `WIDGET_ORIGIN` – public origin of the deployed widget (e.g., `https://my-widget.vercel.app`): the scheme, host and port of the **URL to embed** in AMPECO. With it, a JWT is accepted only when it was issued for this widget. Without it, the audience check is not strict and the server logs a warning at startup. See [Widget Configuration](INTEGRATION_GUIDE.md#widget-configuration).
+
 ### Vercel setup (one-click deploy)
 
 1. In Vercel → Project → Settings → Environment Variables, add the above variables (Production, Preview, Development).

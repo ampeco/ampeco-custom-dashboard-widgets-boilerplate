@@ -10,7 +10,26 @@ import type { NextRequest } from "next/server";
 import { verifyJwt, extractJwtToken } from "@/lib/auth/jwt-verifier";
 
 /**
+ * Request headers that carry the validated JWT context to Server Components.
+ * Only this middleware may set them.
+ */
+const JWT_CONTEXT_HEADERS = [
+  "x-ampeco-admin-id",
+  "x-ampeco-app-id",
+  "x-ampeco-widget-id",
+  "x-ampeco-impersonate",
+  "x-ampeco-jwt-token",
+  "x-ampeco-tenant-url",
+];
+
+/**
  * Middleware to validate JWT tokens
+ *
+ * A request that carries a token (Authorization header or ?token=) is always
+ * validated. A request without a token is rejected on /api routes. A page
+ * without a token is served without JWT context: with postMessage delivery the
+ * page receives the token in the browser after it has loaded, so the page
+ * itself holds no data.
  *
  * Excludes:
  * - /api/health (health check endpoint)
@@ -23,17 +42,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip static files and Next.js internals
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+
+  // Skip static files and Next.js internals (never an API route, whatever its extension)
   if (
     request.nextUrl.pathname.startsWith("/_next") ||
     request.nextUrl.pathname.startsWith("/favicon.ico") ||
-    request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+    (!isApiRoute &&
+      request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/))
   ) {
     return NextResponse.next();
   }
 
   // Extract JWT token
   const token = extractJwtToken(request);
+
+  if (!token && !isApiRoute) {
+    // Page without a token (postMessage delivery). Remove JWT context headers
+    // sent by the caller so that Server Components cannot be given a forged context.
+    const requestHeaders = new Headers(request.headers);
+    JWT_CONTEXT_HEADERS.forEach((header) => requestHeaders.delete(header));
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
 
   if (!token) {
     return NextResponse.json(
@@ -47,12 +82,12 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get expected audience from request origin
-    const origin = request.headers.get("origin") || request.nextUrl.origin;
-    const expectedAudience = origin;
+    // Expected audience for the legacy check, used only when WIDGET_ORIGIN is not set
+    const legacyExpectedAudience =
+      request.headers.get("origin") || request.nextUrl.origin;
 
     // Verify JWT token
-    const payload = await verifyJwt(token, expectedAudience);
+    const payload = await verifyJwt(token, legacyExpectedAudience);
 
     // Store JWT payload in request headers for Server Components
     // Note: Headers are immutable in Next.js, so we use a custom header

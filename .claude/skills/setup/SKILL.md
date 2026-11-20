@@ -117,12 +117,15 @@ Use the write-env script to create (or update) the `.env` file — do NOT use th
 bash .claude/skills/setup/scripts/write-env.sh "<sanitized_domain>" "<api_token>"
 ```
 
+The script also writes `WIDGET_ORIGIN=http://localhost:3000`, the origin the widget is registered with in Phase 3. It makes the JWT audience check strict. If the dev server runs on another port, pass the origin as a third argument (e.g. `"http://localhost:3001"`) and use the same port in the widget URL.
+
 The script outputs `result=created` or `result=updated`. After writing, show the contents with masked secrets:
 
 ```
 .env created:
   AMPECO_BASE_DOMAIN=<sanitized_domain>
   AMPECO_API_TOKEN=<first4>...<last4>
+  WIDGET_ORIGIN=http://localhost:3000
   NODE_ENV=development
 ```
 
@@ -184,6 +187,7 @@ This phase is informational — provide step-by-step instructions:
    - **URL:** `http://localhost:3000/dashboard` (or whichever route you want to display)
    - **Enable Impersonation:** Toggle ON — this lets the widget make API calls on behalf of the logged-in admin, so data is automatically filtered by their permissions
    - **Sandbox options:** Enable **Allow Scripts**, **Allow Forms**, **Allow Same Origin** — these are required for the iframe to run JavaScript, submit forms, and communicate with the parent page
+   - **Impersonation token delivery channel:** **postMessage** (recommended, keeps the JWT out of the URL; needs **Allow Same Origin**) or **Query parameter**. The template supports both
 
 2. **Add the widget to a Dashboard:**
    - Navigate to **System → Dashboards**
@@ -202,8 +206,8 @@ This phase is informational — provide step-by-step instructions:
 
 If the widget doesn't load or shows errors, guide through these checks:
 
-- **"Missing JWT token" error:** The widget URL needs to be loaded through the AMPECO iframe (which appends the JWT token). Directly visiting `http://localhost:3000/dashboard` will show this error — that's expected.
-- **JWT verification failed:** Check that `AMPECO_BASE_DOMAIN` matches the tenant that issued the JWT. Also check that the widget's audience URL matches your dev server URL.
+- **"Missing JWT token" error:** The widget needs to be loaded through the AMPECO iframe, which gives it the JWT token (by postMessage or in the URL). Directly visiting `http://localhost:3000/dashboard` shows "JWT token is required" — that's expected. With postMessage delivery and sandbox options set, check that **Allow Same Origin** is enabled.
+- **JWT verification failed:** Check that `AMPECO_BASE_DOMAIN` matches the tenant that issued the JWT. Also check that `WIDGET_ORIGIN` in `.env` equals the origin of the widget URL registered in AMPECO (e.g. `http://localhost:3000`): same scheme, host and port.
 - **API 401/403 errors:** Verify `AMPECO_API_TOKEN` is correct and the token has the required permissions. If impersonation is enabled, ensure the widget registration has impersonation toggled on.
 - **Blank iframe / CSP errors:** Check browser console for Content Security Policy errors. The AMPECO tenant needs to allow `http://localhost:3000` in its CSP.
 - **CORS errors:** The dev server should handle CORS for local development. Check browser console for specifics.
