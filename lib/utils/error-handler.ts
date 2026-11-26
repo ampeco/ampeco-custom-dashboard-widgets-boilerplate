@@ -15,6 +15,12 @@ export const ERROR_MESSAGES = {
   JWT_EXPIRED: "Your session has expired. Please refresh the page.",
   JWT_INVALID: "Invalid authentication token. Please check your configuration.",
   API_ERROR: "Failed to fetch data from AMPECO API. Please try again later.",
+  // Reloading the back office page issues a new widget token, which covers the
+  // common case of a token older than 12 hours. AMPECO also answers 401 when
+  // the API token itself is expired or revoked, which a reload does not fix,
+  // so the second sentence covers that too.
+  API_UNAUTHORIZED:
+    "Your access to this widget has expired. Reload the page. If this keeps happening, ask your administrator to check the widget's API token.",
   NETWORK_ERROR: "Network error. Please check your connection and try again.",
   UNKNOWN_ERROR: "An unexpected error occurred. Please try again.",
 };

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiService } from "@/lib/services/api";
+import { ApiRequestError, ApiUnreachableError } from "@/lib/utils/api-error";
 
 /**
  * Unified API Route Handler
@@ -19,6 +20,42 @@ import { getApiService } from "@/lib/services/api";
 
 interface RouteParams {
   path: string[];
+}
+
+/**
+ * Answers a failed call with the status that says what actually happened
+ *
+ * | What happened                                  | Status           |
+ * | ---------------------------------------------- | ---------------- |
+ * | AMPECO answered with an error status           | the same status  |
+ * | AMPECO could not be reached, or did not answer | 502              |
+ * | Any other error in the widget server           | 500              |
+ *
+ * A request without a valid widget token never reaches here: the middleware
+ * answers it with 401.
+ *
+ * The body keeps its shape, `{ "error": "<message>" }`, and carries AMPECO's
+ * field validation errors as `errors` when it returned them, so a form can
+ * show them next to its fields.
+ */
+function errorResponse(error: unknown, fallbackMessage: string) {
+  if (error instanceof ApiRequestError) {
+    return NextResponse.json(
+      error.errors
+        ? { error: error.message, errors: error.errors }
+        : { error: error.message },
+      { status: error.status }
+    );
+  }
+
+  if (error instanceof ApiUnreachableError) {
+    return NextResponse.json({ error: error.message }, { status: 502 });
+  }
+
+  return NextResponse.json(
+    { error: error instanceof Error ? error.message : fallbackMessage },
+    { status: 500 }
+  );
 }
 
 /**
@@ -71,15 +108,7 @@ export async function GET(
     const { path } = await params;
     const endpoint = path.join("/");
     console.error(`Error fetching ${endpoint}:`, error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : `Failed to fetch ${endpoint}`,
-      },
-      { status: 500 }
-    );
+    return errorResponse(error, `Failed to fetch ${endpoint}`);
   }
 }
 
@@ -106,15 +135,7 @@ export async function POST(
     const { path } = await params;
     const endpoint = path.join("/");
     console.error(`Error creating ${endpoint}:`, error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : `Failed to create ${endpoint}`,
-      },
-      { status: 500 }
-    );
+    return errorResponse(error, `Failed to create ${endpoint}`);
   }
 }
 
@@ -141,15 +162,7 @@ export async function PATCH(
     const { path } = await params;
     const endpoint = path.join("/");
     console.error(`Error updating ${endpoint}:`, error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : `Failed to update ${endpoint}`,
-      },
-      { status: 500 }
-    );
+    return errorResponse(error, `Failed to update ${endpoint}`);
   }
 }
 
@@ -176,15 +189,7 @@ export async function PUT(
     const { path } = await params;
     const endpoint = path.join("/");
     console.error(`Error replacing ${endpoint}:`, error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : `Failed to replace ${endpoint}`,
-      },
-      { status: 500 }
-    );
+    return errorResponse(error, `Failed to replace ${endpoint}`);
   }
 }
 
@@ -209,14 +214,6 @@ export async function DELETE(
     const { path } = await params;
     const endpoint = path.join("/");
     console.error(`Error deleting ${endpoint}:`, error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : `Failed to delete ${endpoint}`,
-      },
-      { status: 500 }
-    );
+    return errorResponse(error, `Failed to delete ${endpoint}`);
   }
 }

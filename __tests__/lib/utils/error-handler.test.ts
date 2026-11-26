@@ -9,6 +9,7 @@ import {
   ERROR_MESSAGES,
 } from "@/lib/utils/error-handler";
 import type { ApiError } from "@/lib/services/api";
+import { ApiRequestError } from "@/lib/utils/api-error";
 
 describe("Error Handler", () => {
   describe("formatApiError", () => {
@@ -18,6 +19,11 @@ describe("Error Handler", () => {
         status: 500,
       };
       expect(formatApiError(error)).toBe("API request failed");
+    });
+
+    it("should format the error the hooks and the API client now throw", () => {
+      const error = new ApiRequestError("Charge point not found.", 404);
+      expect(formatApiError(error)).toBe("Charge point not found.");
     });
 
     it("should handle expired JWT error", () => {

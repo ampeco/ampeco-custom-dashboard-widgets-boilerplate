@@ -7,6 +7,11 @@
 
 import { getAmpecoConfig } from "@/lib/config/ampeco";
 import { getJwtToken } from "@/lib/auth/get-jwt-context";
+import {
+  ApiRequestError,
+  ApiUnreachableError,
+  toFieldErrors,
+} from "@/lib/utils/api-error";
 
 /**
  * API Response wrapper
@@ -164,62 +169,75 @@ export class ApiService {
       }
     }
 
+    // Only the call itself is guarded here. A failure to reach AMPECO is not
+    // the same as AMPECO rejecting the request, and the two used to arrive at
+    // the proxy as the same opaque error.
+    let response: Response;
     try {
-      const response = await fetch(url, requestOptions);
-
-      if (isDevelopment) {
-        console.log("[API Response]");
-        console.log("  Status:", response.status, response.statusText);
-        console.log("  OK:", response.ok);
-      }
-
-      // Handle non-JSON responses
-      const contentType = response.headers.get("content-type");
-      if (!contentType?.includes("application/json")) {
-        if (!response.ok) {
-          const errorText = await response.text();
-          if (isDevelopment) {
-            console.log("  Error Response (non-JSON):", errorText);
-          }
-          throw new Error(
-            `API request failed: ${response.status} ${response.statusText}`
-          );
-        }
-        return {} as T;
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (isDevelopment) {
-          console.log("  Error Response:", JSON.stringify(data, null, 2));
-        }
-        const error: ApiError = {
-          message: data.message || `API request failed: ${response.status}`,
-          errors: data.errors,
-          status: response.status,
-        };
-        throw error;
-      }
-
-      if (isDevelopment) {
-        console.log("  ✅ Success");
-      }
-
-      return data as T;
+      response = await fetch(url, requestOptions);
     } catch (error) {
       if (isDevelopment) {
-        console.log("  ❌ Error:", error);
+        console.log("  ❌ AMPECO could not be reached:", error);
       }
-      if (error instanceof Error && "status" in error) {
-        throw error;
-      }
-      throw new Error(
-        `API request failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+      throw new ApiUnreachableError(
+        "AMPECO could not be reached. Please try again.",
+        { cause: error }
       );
     }
+
+    if (isDevelopment) {
+      console.log("[API Response]");
+      console.log("  Status:", response.status, response.statusText);
+      console.log("  OK:", response.ok);
+    }
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        if (isDevelopment) {
+          console.log("  Error Response (non-JSON):", errorText);
+        }
+        // Over HTTP/2 there is no status text, so the status carries the
+        // message on its own rather than leaving a sentence that stops short.
+        throw new ApiRequestError(
+          `API request failed: ${response.status}${
+            response.statusText ? ` ${response.statusText}` : ""
+          }`,
+          response.status
+        );
+      }
+      return {} as T;
+    }
+
+    const data: unknown = await response.json();
+
+    if (!response.ok) {
+      if (isDevelopment) {
+        console.log("  Error Response:", JSON.stringify(data, null, 2));
+      }
+      const body = (
+        typeof data === "object" && data !== null ? data : {}
+      ) as Record<string, unknown>;
+      const message =
+        typeof body.message === "string" && body.message
+          ? body.message
+          : `API request failed: ${response.status}`;
+      // The status AMPECO answered travels with the error, so the proxy can
+      // answer with it instead of flattening everything to 500.
+      throw new ApiRequestError(
+        message,
+        response.status,
+        toFieldErrors(body.errors)
+      );
+    }
+
+    if (isDevelopment) {
+      console.log("  ✅ Success");
+    }
+
+    return data as T;
   }
 }
 
