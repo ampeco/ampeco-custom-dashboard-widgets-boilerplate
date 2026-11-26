@@ -3,6 +3,11 @@ name: Pull request checks
 on:
   pull_request:
     branches: [main]
+  # Also after a merge: a pull request is checked against the main branch as it
+  # was when the run started, so two that are green on their own can still be
+  # broken together once both have landed.
+  push:
+    branches: [main]
 
 permissions:
   contents: read
