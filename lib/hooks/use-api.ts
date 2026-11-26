@@ -12,7 +12,7 @@ import {
   type UseMutationOptions,
 } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
-import { getAuthHeaders } from "./utils";
+import { getAuthHeaders, throwIfNotOk } from "./utils";
 
 /**
  * Generic query key factory for any API endpoint
@@ -57,9 +57,7 @@ export function useGet<T = unknown>(
       }`;
 
       const response = await fetch(url, { headers: getAuthHeaders() });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.statusText}`);
-      }
+      await throwIfNotOk(response, "Failed to fetch the data.");
       return response.json();
     },
     staleTime: 30 * 1000, // 30 seconds default
@@ -97,9 +95,7 @@ export function usePost<TData = unknown, TVariables = unknown>(
         },
         body: JSON.stringify(data),
       });
-      if (!response.ok) {
-        throw new Error(`Failed to create: ${response.statusText}`);
-      }
+      await throwIfNotOk(response, "Failed to create the resource.");
       return response.json();
     },
     ...options,
@@ -155,9 +151,7 @@ export function usePatch<TData = unknown, TVariables = unknown>(
         },
         body: JSON.stringify(body),
       });
-      if (!response.ok) {
-        throw new Error(`Failed to update: ${response.statusText}`);
-      }
+      await throwIfNotOk(response, "Failed to update the resource.");
       return response.json();
     },
     ...options,
@@ -212,9 +206,7 @@ export function usePut<TData = unknown, TVariables = unknown>(
         },
         body: JSON.stringify(body),
       });
-      if (!response.ok) {
-        throw new Error(`Failed to replace: ${response.statusText}`);
-      }
+      await throwIfNotOk(response, "Failed to replace the resource.");
       return response.json();
     },
     ...options,
@@ -247,9 +239,7 @@ export function useDelete<TData = void, TVariables = string>(
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-      if (!response.ok) {
-        throw new Error(`Failed to delete: ${response.statusText}`);
-      }
+      await throwIfNotOk(response, "Failed to delete the resource.");
       // DELETE might return empty body
       if (
         response.status === 204 ||
