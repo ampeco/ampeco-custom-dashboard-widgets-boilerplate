@@ -7,6 +7,20 @@ updates:
       interval: weekly
     commit-message:
       prefix: chore
+    ignore:
+      # TypeScript 7 is the native compiler and no longer ships the JavaScript
+      # compiler API: typescript@7.1.0-beta exports only "version" and
+      # "versionMajorMinor". typescript-eslint checks the major version when it
+      # loads and throws before it lints a file, so pointing this dependency at
+      # 7.x turns "npm run lint" red with nothing to fix on our side.
+      #
+      # typescript-eslint does support TypeScript 7.1, since its 8.73.0 release
+      # of 16 November 2026, but it reaches the native compiler over IPC through
+      # a second dependency and requires classic TypeScript 6.0 installed as
+      # "typescript" for that path to start. So this one stays on the 6 line,
+      # and TypeScript 7 arrives here as an addition rather than as this bump.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
