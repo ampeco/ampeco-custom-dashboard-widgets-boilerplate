@@ -22,6 +22,19 @@ updates:
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
 
+      # @types/node describes the Node.js API surface the code is written
+      # against, so it tracks the oldest Node.js this package supports rather
+      # than the newest one that exists. package.json "engines" says
+      # ">=20.9.0" and the checks run on Node 20 and Node 26, so the types
+      # stay on the 20 line: that way "npm run type-check" rejects an API that
+      # Node 20 does not have, instead of accepting code that only runs on the
+      # newer job.
+      #
+      # This moves when the floor moves. Raise "engines" first, then raise
+      # this to the same major in the same change.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
